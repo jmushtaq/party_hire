@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - Party Hire{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Shopping Cart</h1>
+    
+    {% if items %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Dates</th>
+                                    <th>Days</th>
+                                    <th>Price/Day</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.item.name }}</strong><br>
+                                        <small class="text-muted">{{ item.item.category.name }}</small>
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>
+                                        {{ item.start_date }} to {{ item.end_date }}<br>
+                                        <small>{{ item.days }} days</small>
+                                    </td>
+                                    <td>{{ item.days }}</td>
+                                    <td>${{ item.item.price_per_day }}</td>
+                                    <td>${{ item.total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>${{ subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Cost:</span>
+                        <span>${{ delivery_cost|floatformat:2 }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <strong>${{ total|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Deposit Required (30%):</span>
+                        <span class="text-primary">${{ deposit|floatformat:2 }}</span>
+                    </div>
+                    <a href="{% url 'bookings:checkout' %}" class="btn btn-primary btn-lg w-100">
+                        Proceed to Checkout
+                    </a>
+                    <a href="{% url 'items:item_list' %}" class="btn btn-outline-secondary w-100 mt-2">
+                        Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <h3>Your cart is empty</h3>
+        <p>Looks like you haven't added any items to your cart yet.</p>
+        <a href="{% url 'items:item_list' %}" class="btn btn-primary">Browse Items</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

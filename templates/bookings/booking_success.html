@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking Confirmed - Party Hire{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2 text-center">
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle fa-4x mb-3"></i>
+                <h2>Booking Confirmed!</h2>
+                <p>Thank you for your booking. Your deposit has been received.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4>Booking Details</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Booking Number:</strong> {{ booking.booking_number }}</p>
+                    <p><strong>Name:</strong> {{ booking.customer_name }}</p>
+                    <p><strong>Email:</strong> {{ booking.customer_email }}</p>
+                    <p><strong>Phone:</strong> {{ booking.customer_phone }}</p>
+                    <p><strong>Dates:</strong> {{ booking.start_date }} to {{ booking.end_date }}</p>
+                    <p><strong>Total Amount:</strong> ${{ booking.total_amount|floatformat:2 }}</p>
+                    <p><strong>Deposit Paid:</strong> ${{ booking.deposit_amount|floatformat:2 }}</p>
+                    <p><strong>Remaining Balance:</strong> ${{ booking.total_amount|add:booking.deposit_amount|floatformat:2 }}</p>
+                    
+                    <hr>
+                    
+                    <h5>Items Hired:</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Days</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in booking.items.all %}
+                                <tr>
+                                    <td>{{ item.item.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.number_of_days }}</td>
+                                    <td>${{ item.total_price|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <p>A confirmation email has been sent to your email address.</p>
+                    </div>
+                    
+                    <a href="{% url 'home' %}" class="btn btn-primary">Return to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add Font Awesome if not already loaded
+    if (!document.querySelector('link[href*="font-awesome"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+        document.head.appendChild(link);
+    }
+</script>
+{% endblock %}

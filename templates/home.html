@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Party Hire - Premium Event Equipment Hire{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Hero Section -->
+    <div class="hero-section text-center py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px;">
+        <h1 class="display-4 text-white mb-3">Welcome to Party Hire</h1>
+        <p class="lead text-white">Your one-stop shop for premium party and event equipment</p>
+        <a href="{% url 'items:item_list' %}" class="btn btn-light btn-lg mt-3">Browse Our Collection</a>
+    </div>
+
+    <!-- Featured Items -->
+    <h2 class="text-center mb-4">Featured Items</h2>
+    <div class="row">
+        {% for item in featured_items %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                {% if item.image %}
+                <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <span class="text-white">No Image</span>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.name }}</h5>
+                    <p class="card-text">{{ item.description|truncatewords:20 }}</p>
+                    <p class="card-text"><strong>${{ item.price_per_day }}/day</strong></p>
+                    <a href="{% url 'items:item_detail' slug=item.slug %}" class="btn btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center">No featured items available at the moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Categories Section -->
+    <h2 class="text-center mb-4 mt-5">Shop by Category</h2>
+    <div class="row">
+        {% for category in categories %}
+        <div class="col-md-3 col-sm-6 mb-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ category.name }}</h5>
+                    <p class="card-text">{{ category.description|truncatewords:10 }}</p>
+                    <a href="{% url 'items:category_items' category_slug=category.slug %}" class="btn btn-outline-primary">View Items</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center">No categories available.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- How It Works -->
+    <div class="row mt-5 py-5 bg-light rounded">
+        <div class="col-12 text-center mb-4">
+            <h2>How It Works</h2>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="mb-3">
+                <i class="fas fa-search fa-3x text-primary"></i>
+            </div>
+            <h4>1. Browse Items</h4>
+            <p>Browse our collection of premium party and event equipment</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="mb-3">
+                <i class="fas fa-calendar-alt fa-3x text-primary"></i>
+            </div>
+            <h4>2. Select Dates</h4>
+            <p>Choose your hire dates and add items to cart</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="mb-3">
+                <i class="fas fa-credit-card fa-3x text-primary"></i>
+            </div>
+            <h4>3. Secure Booking</h4>
+            <p>Pay deposit and confirm your booking</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add Font Awesome for icons
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+    document.head.appendChild(link);
+</script>
+{% endblock %}
+
