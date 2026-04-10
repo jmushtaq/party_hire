@@ -1,0 +1,80 @@
+<div class="dropdown">
+    <button class="btn btn-outline-{% if current_theme == 'default' %}primary{% elif current_theme == 'elegant' %}warning{% else %}info{% endif %} dropdown-toggle" 
+            type="button" 
+            data-bs-toggle="dropdown" 
+            aria-expanded="false">
+        <i class="fas fa-palette"></i> Theme: 
+        {% for key, theme in themes.items %}
+            {% if key == current_theme %}{{ theme.name }}{% endif %}
+        {% endfor %}
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        {% for key, theme in themes.items %}
+        <li>
+            <a class="dropdown-item {% if key == current_theme %}active{% endif %}" 
+               href="?theme={{ key }}" 
+               onclick="setTheme('{{ key }}'); return false;">
+                <div class="d-flex align-items-center">
+                    <div class="me-2">
+                        <i class="fas fa-circle" style="color: 
+                            {% if key == 'default' %}#2563eb
+                            {% elif key == 'elegant' %}#d4af37
+                            {% else %}#667eea{% endif %}"></i>
+                    </div>
+                    <div>
+                        <strong>{{ theme.name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ theme.description }}</small>
+                    </div>
+                </div>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script>
+function setTheme(themeName) {
+    // Store theme preference in localStorage
+    localStorage.setItem('active_theme', themeName);
+    
+    // Update the theme CSS link
+    const themeLink = document.getElementById('theme-style');
+    if (themeLink) {
+        themeLink.href = `/static/css/themes/${themeName}/style.css`;
+    }
+    
+    // Show notification
+    showNotification(`Theme changed to ${themeName.charAt(0).toUpperCase() + themeName.slice(1)}`);
+    
+    // Reload page to apply all changes
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Load saved theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('active_theme');
+    if (savedTheme && savedTheme !== '{{ current_theme }}') {
+        setTheme(savedTheme);
+    }
+});
+</script>

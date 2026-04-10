@@ -37,28 +37,26 @@ MIDDLEWARE = [
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
+        'apps.core.middleware.ThemeMiddleware',
+        'apps.core.middleware.ThemeContextMiddleware',
 ]
 
 ROOT_URLCONF = 'party_hire.urls'
 
 TEMPLATES = [
     {
-                'BACKEND': 'django.template.backends.django.DjangoTemplates',
-                'DIRS': [BASE_DIR / 'templates'],
-                'APP_DIRS': True,
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                                'django.template.context_processors.debug',
-                                'django.template.context_processors.request',
-                                'django.contrib.auth.context_processors.auth',
-                                'django.contrib.messages.context_processors.messages',
-                                'apps.core.context_processors.theme_context',
-
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'apps.core.context_processors.theme_context',
             ],
-
         },
-
     },
 
 ]
@@ -117,4 +115,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Stripe (for deposits)
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
+
+# Theme settings (add to your existing settings)
+AVAILABLE_THEMES = {
+    'default': {
+        'name': 'Classic Blue',
+        'description': 'Clean and professional blue theme',
+        'css_file': 'css/themes/default/style.css',
+        'thumbnail': 'themes/default-thumb.jpg'
+    },
+    'elegant': {
+        'name': 'Elegant Gold',
+        'description': 'Luxurious gold and dark theme for premium events',
+        'css_file': 'css/themes/elegant/style.css',
+        'thumbnail': 'themes/elegant-thumb.jpg'
+    },
+    'modern': {
+        'name': 'Modern Gradient',
+        'description': 'Contemporary gradient design with vibrant colors',
+        'css_file': 'css/themes/modern/style.css',
+        'thumbnail': 'themes/modern-thumb.jpg'
+    }
+}
+ACTIVE_THEME = 'default'  # Can be changed via session or user preference
 

@@ -1,0 +1,112 @@
+/* Elegant Gold Theme - Luxury & Premium */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap');
+
+:root {
+    --primary-color: #d4af37;
+    --primary-dark: #b8960c;
+    --primary-light: #f5e6a3;
+    --secondary-color: #2c2c2c;
+    --success-color: #2e7d32;
+    --danger-color: #c62828;
+    --warning-color: #f57c00;
+    --info-color: #1565c0;
+    --dark-color: #1a1a1a;
+    --light-color: #faf9f6;
+    --gold-gradient: linear-gradient(135deg, #d4af37 0%, #f5e6a3 50%, #d4af37 100%);
+    --shadow-elegant: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--light-color);
+    color: var(--dark-color);
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: 'Playfair Display', serif;
+}
+
+.navbar {
+    background: var(--dark-color) !important;
+    border-bottom: 3px solid var(--primary-color);
+    box-shadow: var(--shadow-elegant);
+}
+
+.navbar-brand {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.8rem;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.card {
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 15px;
+    background: white;
+    box-shadow: var(--shadow-elegant);
+    transition: all 0.4s ease;
+}
+
+.card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: var(--gold-gradient);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+    color: var(--dark-color);
+}
+
+.hero-section {
+    background: linear-gradient(135deg, var(--dark-color) 0%, #2c2c2c 100%);
+    border: 1px solid var(--primary-color);
+    border-radius: 20px;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '✨';
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.05;
+    top: -50px;
+    right: -50px;
+}
+
+.category-card {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.category-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+    transform: scale(1.02);
+}
+
+footer {
+    background: var(--dark-color);
+    border-top: 3px solid var(--primary-color);
+    color: var(--light-color);
+}
