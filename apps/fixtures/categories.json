@@ -1,0 +1,62 @@
+[
+  {
+    "model": "items.category",
+    "pk": 1,
+    "fields": {
+      "name": "Flower Arrangements",
+      "slug": "flower-arrangements",
+      "description": "Stunning fresh and artificial flower arrangements for all occasions. From elegant bouquets to grand centerpieces.",
+      "image": "categories/flowers.jpg"
+    }
+  },
+  {
+    "model": "items.category",
+    "pk": 2,
+    "fields": {
+      "name": "Backdrops & Walls",
+      "slug": "backdrops-walls",
+      "description": "Create stunning photo opportunities with our range of backdrops, flower walls, and geometric decor.",
+      "image": "categories/backdrops.jpg"
+    }
+  },
+  {
+    "model": "items.category",
+    "pk": 3,
+    "fields": {
+      "name": "Furniture Hire",
+      "slug": "furniture",
+      "description": "Elegant furniture for any event including chiavari chairs, lounges, bar stools, and tables.",
+      "image": "categories/furniture.jpg"
+    }
+  },
+  {
+    "model": "items.category",
+    "pk": 4,
+    "fields": {
+      "name": "Lighting & Effects",
+      "slug": "lighting-effects",
+      "description": "Create the perfect atmosphere with our lighting solutions including uplighting, festoon lights, and special effects.",
+      "image": "categories/lighting.jpg"
+    }
+  },
+  {
+    "model": "items.category",
+    "pk": 5,
+    "fields": {
+      "name": "Tableware & Decor",
+      "slug": "tableware-decor",
+      "description": "Complete your tablescape with our range of tablecloths, runners, centerpieces, and tableware.",
+      "image": "categories/tableware.jpg"
+    }
+  },
+  {
+    "model": "items.category",
+    "pk": 6,
+    "fields": {
+      "name": "Party Accessories",
+      "slug": "party-accessories",
+      "description": "Everything you need for a memorable party including balloons, signs, and party favors.",
+      "image": "categories/accessories.jpg"
+    }
+  }
+]

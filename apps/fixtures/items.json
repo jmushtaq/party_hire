@@ -1,0 +1,254 @@
+[
+  {
+    "model": "items.hireitem",
+    "pk": 1,
+    "fields": {
+      "name": "Romantic Rose Backdrop",
+      "slug": "romantic-rose-backdrop",
+      "category": 2,
+      "description": "Stunning 8ft x 8ft rose flower wall featuring over 500 artificial roses in blush pink, white, and cream. Perfect for weddings, proposals, and photo booths.",
+      "price_per_day": "299.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 3,
+      "dimensions": "8ft x 8ft",
+      "weight": 45.50,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 2,
+    "fields": {
+      "name": "Gold Chiavari Chairs (Set of 10)",
+      "slug": "gold-chiavari-chairs",
+      "category": 3,
+      "description": "Elegant gold resin chiavari chairs with cushioned seats. Set includes 10 chairs. Perfect for weddings, galas, and formal events.",
+      "price_per_day": "150.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 50,
+      "dimensions": "18\"W x 36\"H",
+      "weight": 8.50,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 3,
+    "fields": {
+      "name": "LED Uplighting Package (8 Lights)",
+      "slug": "led-uplighting-package",
+      "category": 4,
+      "description": "Wireless LED uplights that can be set to any color. Perfect for creating ambiance at weddings, corporate events, and parties. Includes remote control.",
+      "price_per_day": "199.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 20,
+      "dimensions": "6\" x 6\" x 12\"",
+      "weight": 2.00,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 4,
+    "fields": {
+      "name": "Elegant Floral Centerpiece",
+      "slug": "floral-centerpiece",
+      "category": 1,
+      "description": "Stunning fresh flower centerpiece featuring roses, hydrangeas, and eucalyptus. Customizable colors to match your theme. Perfect for wedding receptions and formal dinners.",
+      "price_per_day": "85.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 15,
+      "dimensions": "12\" diameter x 10\" height",
+      "weight": 3.00,
+      "is_available": true,
+      "featured": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 5,
+    "fields": {
+      "name": "Bohemian Backdrop with Macrame",
+      "slug": "bohemian-backdrop",
+      "category": 2,
+      "description": "Beautiful boho-chic backdrop featuring macrame, pampas grass, and wooden beads. Perfect for bridal showers, baby showers, and casual weddings.",
+      "price_per_day": "249.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 2,
+      "dimensions": "7ft x 7ft",
+      "weight": 35.00,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 6,
+    "fields": {
+      "name": "Cocktail Table Set (4 Tables)",
+      "slug": "cocktail-table-set",
+      "category": 3,
+      "description": "Set of 4 high cocktail tables with black linen. Perfect for mingling areas, cocktail hours, and networking events. Each table stands 42\" high.",
+      "price_per_day": "120.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 25,
+      "dimensions": "30\" diameter x 42\" height",
+      "weight": 15.00,
+      "is_available": true,
+      "featured": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 7,
+    "fields": {
+      "name": "Fairy Light Curtain",
+      "slug": "fairy-light-curtain",
+      "category": 4,
+      "description": "Magical 10ft x 10ft fairy light curtain with warm white LED lights. Perfect for photo backdrops, stages, and creating a magical atmosphere.",
+      "price_per_day": "149.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 10,
+      "dimensions": "10ft x 10ft",
+      "weight": 8.00,
+      "is_available": true,
+      "featured": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 8,
+    "fields": {
+      "name": "Premium White Tablecloth (10 Pack)",
+      "slug": "white-tablecloth-pack",
+      "category": 5,
+      "description": "Set of 10 premium polyester tablecloths in crisp white. Wrinkle-resistant and machine washable. Fits standard 6ft and 8ft tables.",
+      "price_per_day": "89.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 100,
+      "dimensions": "90\" x 132\"",
+      "weight": 2.50,
+      "is_available": true,
+      "featured": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 9,
+    "fields": {
+      "name": "Balloon Arch Kit",
+      "slug": "balloon-arch-kit",
+      "category": 6,
+      "description": "Complete balloon arch kit including frame, 100 balloons in your choice of colors, and assembly instructions. Creates a stunning 10ft arch.",
+      "price_per_day": "199.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 8,
+      "dimensions": "10ft wide x 8ft high",
+      "weight": 12.00,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 10,
+    "fields": {
+      "name": "Geometric Gold Centerpiece",
+      "slug": "geometric-centerpiece",
+      "category": 5,
+      "description": "Modern geometric gold terrarium centerpiece. Perfect for contemporary weddings, engagement parties, and corporate events. Can be filled with flowers or candles.",
+      "price_per_day": "45.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 30,
+      "dimensions": "10\" x 10\" x 12\"",
+      "weight": 2.00,
+      "is_available": true,
+      "featured": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 11,
+    "fields": {
+      "name": "Neon Sign - LOVE",
+      "slug": "neon-sign-love",
+      "category": 4,
+      "description": "Eye-catching LED neon sign spelling LOVE. Great for photo walls, dance floors, and creating a memorable atmosphere. Battery operated or plug-in.",
+      "price_per_day": "129.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 5,
+      "dimensions": "36\" x 12\"",
+      "weight": 5.00,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "items.hireitem",
+    "pk": 12,
+    "fields": {
+      "name": "Luxury Velvet Lounge Suite",
+      "slug": "velvet-lounge-suite",
+      "category": 3,
+      "description": "Elegant velvet lounge suite including 2 sofas and 2 armchairs in emerald green. Perfect for VIP areas, lounge settings, and sophisticated events.",
+      "price_per_day": "399.00",
+      "deposit_percentage": 30,
+      "image": "",
+      "gallery_images": [],
+      "quantity_available": 4,
+      "dimensions": "Varies",
+      "weight": 150.00,
+      "is_available": true,
+      "featured": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]
