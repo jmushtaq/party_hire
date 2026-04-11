@@ -1,4 +1,4 @@
-/* Modern Gradient Theme - Vibrant & Contemporary */
+/* Modern Gradient Theme - Fixed z-index issues */
 :root {
     --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -24,6 +24,8 @@ body {
     background: var(--gradient-1) !important;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1030 !important;
+    position: relative;
 }
 
 .navbar-brand {
@@ -33,6 +35,23 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+}
+
+/* Fix for dropdown menus */
+.dropdown-menu {
+    z-index: 1050 !important;
+}
+
+/* Fix for buttons and links */
+.btn, 
+.btn-light, 
+.btn-lg, 
+.hero-section .btn,
+.hero-section a {
+    position: relative;
+    z-index: 10 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
 }
 
 .card {
@@ -70,25 +89,20 @@ body {
     border-radius: 30px;
     padding: 4rem 2rem;
     position: relative;
-    overflow: hidden;
+    overflow: visible !important; /* Changed from hidden to visible */
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    z-index: 1;
 }
 
+/* Remove the shimmer animation that was causing issues */
 .hero-section::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 1%, transparent 1%);
-    background-size: 50px 50px;
-    animation: shimmer 20s linear infinite;
+    display: none !important;
 }
 
-@keyframes shimmer {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(50px, 50px); }
+/* Ensure hero section content is clickable */
+.hero-section * {
+    position: relative;
+    z-index: 2;
 }
 
 .category-card {
@@ -111,4 +125,25 @@ footer {
     color: white;
     margin-top: 4rem;
     padding: 2rem 0;
+    position: relative;
+    z-index: 1;
 }
+
+/* Fix for cart count badge */
+.badge {
+    z-index: 1040 !important;
+}
+
+/* Ensure all links work properly */
+a, 
+button, 
+.btn {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* Fix any potential overlay issues */
+.hero-section::before {
+    display: none !important;
+}
+

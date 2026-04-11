@@ -1,13 +1,20 @@
+from django.shortcuts import render, redirect, get_object_or_404  # Add get_object_or_404 here
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.core.mail import send_mail
 from django.conf import settings
-from django.http import JsonResponse
-from django.shortcuts import render
-from .models import HireItem
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.http import JsonResponse  # Add this for AJAX responses
 from decimal import Decimal
-from datetime import datetime
-import json
+from .models import Booking, BookingItem
+from apps.items.models import HireItem, ItemAvailability
 import stripe
+from datetime import datetime, timedelta
+import json
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
 
 def booking_cart(request):
     """Display shopping cart"""
