@@ -188,7 +188,13 @@
             </div>
         </div>
     </nav>
-    
+
+    {% if show_date_picker %}
+    <div class="container mt-3">
+        {% include 'bookings/date_range_picker.html' %}
+    </div>
+    {% endif %}
+
     <!-- Main Content -->
     <main>
         {% if messages %}

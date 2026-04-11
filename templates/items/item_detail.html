@@ -65,19 +65,9 @@
             
             <hr>
             
+            <!-- Replace the form section with this simplified version -->
             <form method="POST" action="{% url 'bookings:add_to_cart' item.id %}" id="add-to-cart-form">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <label for="start_date" class="form-label">Start Date *</label>
-                    <input type="date" class="form-control date-picker" id="start_date" name="start_date" required>
-                    <div class="error-message" id="start-date-error"></div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="end_date" class="form-label">End Date *</label>
-                    <input type="date" class="form-control date-picker" id="end_date" name="end_date" required>
-                    <div class="error-message" id="end-date-error"></div>
-                </div>
                 
                 <div class="mb-3">
                     <label for="quantity" class="form-label">Quantity</label>
@@ -85,9 +75,25 @@
                            value="1" min="1" max="{{ item.quantity_available }}">
                 </div>
                 
+                {% if booking_start_date and booking_end_date %}
+                <div class="alert alert-info">
+                    <small>
+                        <i class="fas fa-calendar-alt"></i> 
+                        Hire Period: {{ booking_start_date }} to {{ booking_end_date }}
+                    </small>
+                </div>
                 <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
                     Add to Cart
                 </button>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Please select your hire dates first using the date picker above.
+                </div>
+                <button type="submit" class="btn btn-secondary btn-lg" disabled>
+                    Add to Cart (Select Dates First)
+                </button>
+                {% endif %}
             </form>
             
             <div id="availability-info" class="mt-3"></div>

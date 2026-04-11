@@ -56,6 +56,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.theme_context',
                 'apps.core.context_processors.cart_count_context',
+                'apps.core.context_processors.date_range_context',
             ],
         },
     },

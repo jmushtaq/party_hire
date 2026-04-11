@@ -1,7 +1,7 @@
 from django.conf import settings
 
 def theme_context(request):
-    # Get theme from session or GET parameter
+    """Add theme context to all templates"""
     theme = request.GET.get('theme')
     if theme and theme in settings.AVAILABLE_THEMES:
         request.session['active_theme'] = theme
@@ -20,4 +20,20 @@ def cart_count_context(request):
     cart = request.session.get('booking_cart', {})
     return {
         'cart_count': len(cart)
+    }
+
+def date_range_context(request):
+    """Add date range to all templates"""
+    start_date = request.session.get('booking_start_date')
+    end_date = request.session.get('booking_end_date')
+
+    # Determine if we should show the date picker
+    # Show on all pages except checkout and payment
+    path = request.path
+    show_picker = not any(x in path for x in ['checkout', 'payment', 'success'])
+
+    return {
+        'show_date_picker': show_picker,
+        'booking_start_date': start_date,
+        'booking_end_date': end_date,
     }

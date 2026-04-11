@@ -159,3 +159,19 @@ footer {
     margin-top: auto;
 }
 
+/* Calendar range highlighting */
+.flatpickr-day.selectedRange {
+    background: var(--primary-color, #667eea);
+    border-color: var(--primary-color, #667eea);
+}
+
+.flatpickr-day.inRange {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.2);
+}
+
+.date-range-picker {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}

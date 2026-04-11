@@ -1,0 +1,205 @@
+<div class="date-range-picker card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Select Your Hire Dates</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Please select your hire dates first. All items will be booked for the same date range.
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="start_date_calendar" class="form-label fw-bold">
+                        <i class="fas fa-calendar-alt"></i> Start Date
+                    </label>
+                    <input type="text" class="form-control" id="start_date_calendar" 
+                           placeholder="Select start date" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="end_date_calendar" class="form-label fw-bold">
+                        <i class="fas fa-calendar-check"></i> End Date
+                    </label>
+                    <input type="text" class="form-control" id="end_date_calendar" 
+                           placeholder="Select end date" readonly>
+                </div>
+            </div>
+        </div>
+        
+        <div id="calendar-container" class="mt-3"></div>
+        
+        <div id="date-range-summary" class="mt-3 alert alert-success" style="display: none;">
+            <strong><i class="fas fa-check-circle"></i> Selected Range:</strong>
+            <span id="selected-range-display"></span>
+            <span id="duration-display" class="badge bg-info ms-2"></span>
+        </div>
+        
+        <div id="availability-warning" class="mt-3 alert alert-warning" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="warning-message"></span>
+        </div>
+        
+        <button id="confirm-dates-btn" class="btn btn-success btn-lg w-100 mt-3" style="display: none;">
+            <i class="fas fa-check"></i> Confirm Dates & Continue
+        </button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+let currentStartDate = null;
+let currentEndDate = null;
+
+// Initialize dual calendar
+const startPicker = flatpickr("#start_date_calendar", {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    onChange: function(selectedDates, dateStr, instance) {
+        if (selectedDates.length > 0) {
+            currentStartDate = dateStr;
+            if (currentEndDate && currentEndDate < currentStartDate) {
+                endPicker.clear();
+                currentEndDate = null;
+            }
+            endPicker.set('minDate', currentStartDate);
+            updateCalendarRange();
+        }
+    }
+});
+
+const endPicker = flatpickr("#end_date_calendar", {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    onChange: function(selectedDates, dateStr, instance) {
+        if (selectedDates.length > 0) {
+            currentEndDate = dateStr;
+            if (currentStartDate && currentEndDate < currentStartDate) {
+                alert("End date cannot be before start date");
+                endPicker.clear();
+                currentEndDate = null;
+                return;
+            }
+            updateCalendarRange();
+        }
+    }
+});
+
+function updateCalendarRange() {
+    if (currentStartDate && currentEndDate) {
+        // Calculate duration
+        const start = new Date(currentStartDate);
+        const end = new Date(currentEndDate);
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        
+        // Show summary
+        document.getElementById('date-range-summary').style.display = 'block';
+        document.getElementById('selected-range-display').innerHTML = 
+            `${currentStartDate} to ${currentEndDate}`;
+        document.getElementById('duration-display').innerHTML = 
+            `${days} day${days > 1 ? 's' : ''}`;
+        document.getElementById('confirm-dates-btn').style.display = 'block';
+        
+        // Highlight range in calendars (using flatpickr's built-in range mode)
+        startPicker.set('disable', []);
+        endPicker.set('disable', []);
+    } else {
+        document.getElementById('date-range-summary').style.display = 'none';
+        document.getElementById('confirm-dates-btn').style.display = 'none';
+    }
+}
+
+// Confirm dates and save to session
+document.getElementById('confirm-dates-btn').addEventListener('click', function() {
+    if (currentStartDate && currentEndDate) {
+        // Show loading
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking Availability...';
+        btn.disabled = true;
+        
+        // Send to server
+        fetch('/bookings/set-date-range/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                start_date: currentStartDate,
+                end_date: currentEndDate
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success
+                const warningDiv = document.getElementById('availability-warning');
+                if (data.unavailable_items && data.unavailable_items.length > 0) {
+                    warningDiv.style.display = 'block';
+                    document.getElementById('warning-message').innerHTML = 
+                        `Warning: ${data.unavailable_items.length} item(s) in your cart are no longer available for these dates. Please review your cart.`;
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+                
+                // Reload page to refresh cart with new dates
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert('Error: ' + data.error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error setting dates');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+});
+
+// Load existing date range on page load
+function loadExistingDates() {
+    fetch('/bookings/get-date-range/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.start_date && data.end_date) {
+                currentStartDate = data.start_date;
+                currentEndDate = data.end_date;
+                startPicker.setDate(currentStartDate, false);
+                endPicker.setDate(currentEndDate, false);
+                updateCalendarRange();
+                
+                // Show that dates are already set
+                const summaryDiv = document.getElementById('date-range-summary');
+                summaryDiv.className = 'mt-3 alert alert-info';
+                summaryDiv.style.display = 'block';
+            }
+        });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Load existing dates when page loads
+document.addEventListener('DOMContentLoaded', loadExistingDates);
+</script>

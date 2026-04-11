@@ -1,11 +1,11 @@
-from django.shortcuts import render, redirect, get_object_or_404  # Add get_object_or_404 here
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.http import JsonResponse  # Add this for AJAX responses
+from django.http import JsonResponse
 from decimal import Decimal
 from .models import Booking, BookingItem
 from apps.items.models import HireItem, ItemAvailability
@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 import json
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
-
 
 def booking_cart(request):
     """Display shopping cart"""
@@ -58,19 +57,101 @@ def booking_cart(request):
         'deposit': deposit
     })
 
+def set_date_range(request):
+    """Set the global date range for the booking session"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+
+            if start_date and end_date:
+                # Validate dates
+                start = datetime.strptime(start_date, '%Y-%m-%d')
+                end = datetime.strptime(end_date, '%Y-%m-%d')
+
+                if start.date() < timezone.now().date():
+                    return JsonResponse({'success': False, 'error': 'Start date cannot be in the past'})
+
+                if end < start:
+                    return JsonResponse({'success': False, 'error': 'End date must be after start date'})
+
+                # Store in session
+                request.session['booking_start_date'] = start_date
+                request.session['booking_end_date'] = end_date
+
+                # Check availability for all items in cart
+                cart = request.session.get('booking_cart', {})
+                unavailable_items = []
+
+                for item_id, item_data in cart.items():
+                    try:
+                        item = HireItem.objects.get(id=item_id)
+                        current_date = start
+                        while current_date <= end:
+                            availability = ItemAvailability.objects.filter(
+                                item=item,
+                                date=current_date.date(),
+                                is_booked=True
+                            ).exists()
+                            if availability:
+                                unavailable_items.append({
+                                    'id': item_id,
+                                    'name': item.name,
+                                    'date': current_date.strftime('%Y-%m-%d')
+                                })
+                                break
+                            current_date += timedelta(days=1)
+                    except HireItem.DoesNotExist:
+                        continue
+
+                return JsonResponse({
+                    'success': True,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'unavailable_items': unavailable_items
+                })
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+def get_date_range(request):
+    """Get the current date range from session"""
+    start_date = request.session.get('booking_start_date')
+    end_date = request.session.get('booking_end_date')
+
+    # If no dates set, suggest next Thursday to Monday
+    if not start_date or not end_date:
+        today = timezone.now().date()
+        # Find next Thursday
+        days_until_thursday = (3 - today.weekday()) % 7
+        if days_until_thursday == 0:
+            days_until_thursday = 7
+        start_date = (today + timedelta(days=days_until_thursday)).isoformat()
+        # Monday is 4 days after Thursday
+        end_date = (today + timedelta(days=days_until_thursday + 4)).isoformat()
+
+    return JsonResponse({
+        'start_date': start_date,
+        'end_date': end_date
+    })
+
 def add_to_cart(request, item_id):
-    """Add item to shopping cart"""
+    """Add item to shopping cart with global date range"""
     item = get_object_or_404(HireItem, id=item_id)
 
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date', '').strip()
-        end_date = request.POST.get('end_date', '').strip()
-        quantity = request.POST.get('quantity', 1)
+    # Check if date range is set
+    start_date = request.session.get('booking_start_date')
+    end_date = request.session.get('booking_end_date')
 
-        # Validate dates are provided
-        if not start_date or not end_date:
-            messages.error(request, f"Please select both start and end dates for {item.name}")
-            return redirect('items:item_detail', slug=item.slug)
+    if not start_date or not end_date:
+        messages.error(request, "Please select your hire dates first")
+        return redirect('items:item_detail', slug=item.slug)
+
+    if request.method == 'POST':
+        quantity = request.POST.get('quantity', 1)
 
         try:
             quantity = int(quantity)
@@ -79,24 +160,11 @@ def add_to_cart(request, item_id):
             if quantity > item.quantity_available:
                 messages.error(request, f"Only {item.quantity_available} units available for {item.name}")
                 return redirect('items:item_detail', slug=item.slug)
-        except ValueError:
-            quantity = 1
 
-        try:
-            # Parse dates
+            # Check availability with global dates
             start = datetime.strptime(start_date, '%Y-%m-%d')
             end = datetime.strptime(end_date, '%Y-%m-%d')
 
-            # Validate date range
-            if start.date() < timezone.now().date():
-                messages.error(request, "Start date cannot be in the past")
-                return redirect('items:item_detail', slug=item.slug)
-
-            if end < start:
-                messages.error(request, "End date must be after start date")
-                return redirect('items:item_detail', slug=item.slug)
-
-            # Check availability
             current_date = start
             unavailable_dates = []
             while current_date <= end:
@@ -125,17 +193,110 @@ def add_to_cart(request, item_id):
             }
             request.session['booking_cart'] = cart
 
-            # Success message - stays on same page
             messages.success(request, f"✓ {item.name} has been added to your cart!")
-
-            # Return to item detail page instead of cart
-            return redirect('items:item_detail', slug=item.slug)
+            return redirect('items:item_list')
 
         except ValueError as e:
-            messages.error(request, f"Invalid date format. Please select valid dates.")
+            messages.error(request, f"Invalid quantity")
             return redirect('items:item_detail', slug=item.slug)
 
     return redirect('items:item_detail', slug=item.slug)
+
+def update_cart_item(request, item_id):
+    """Update quantity of item in cart"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_quantity = int(data.get('quantity', 1))
+
+            cart = request.session.get('booking_cart', {})
+
+            if str(item_id) in cart:
+                item_data = cart[str(item_id)]
+
+                # Validate quantity against available stock
+                item = HireItem.objects.get(id=item_id)
+                if new_quantity > item.quantity_available:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Only {item.quantity_available} units available'
+                    })
+
+                if new_quantity <= 0:
+                    # Remove item if quantity is 0 or less
+                    del cart[str(item_id)]
+                else:
+                    item_data['quantity'] = new_quantity
+                    cart[str(item_id)] = item_data
+
+                request.session['booking_cart'] = cart
+
+                # Recalculate totals
+                subtotal = Decimal('0')
+                item_total_calc = Decimal('0')
+                for item_id_str, item_data in cart.items():
+                    cart_item = HireItem.objects.get(id=item_id_str)
+                    days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
+                            datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
+                    item_total = cart_item.price_per_day * item_data['quantity'] * days
+                    subtotal += item_total
+
+                    if int(item_id_str) == item_id:
+                        item_total_calc = item_total
+
+                delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
+                grand_total = subtotal + delivery_cost
+                deposit = grand_total * Decimal('0.3')
+
+                return JsonResponse({
+                    'success': True,
+                    'item_total': float(item_total_calc),
+                    'subtotal': float(subtotal),
+                    'grand_total': float(grand_total),
+                    'deposit': float(deposit),
+                    'cart_count': len(cart)
+                })
+
+            return JsonResponse({'success': False, 'error': 'Item not found in cart'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def remove_from_cart(request, item_id):
+    """Remove item from cart"""
+    if request.method == 'POST':
+        cart = request.session.get('booking_cart', {})
+
+        if str(item_id) in cart:
+            del cart[str(item_id)]
+            request.session['booking_cart'] = cart
+
+            # Recalculate totals
+            subtotal = Decimal('0')
+            for item_id_str, item_data in cart.items():
+                item = HireItem.objects.get(id=item_id_str)
+                days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
+                        datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
+                item_total = item.price_per_day * item_data['quantity'] * days
+                subtotal += item_total
+
+            delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
+            grand_total = subtotal + delivery_cost
+            deposit = grand_total * Decimal('0.3')
+
+            return JsonResponse({
+                'success': True,
+                'subtotal': float(subtotal),
+                'grand_total': float(grand_total),
+                'deposit': float(deposit),
+                'cart_count': len(cart)
+            })
+
+        return JsonResponse({'success': False, 'error': 'Item not found in cart'})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 def checkout(request):
     """Checkout process"""
@@ -151,8 +312,8 @@ def checkout(request):
             customer_email = request.POST.get('email', '').strip()
             customer_phone = request.POST.get('phone', '').strip()
             customer_address = request.POST.get('address', '').strip()
-            start_date = request.POST.get('start_date', '').strip()
-            end_date = request.POST.get('end_date', '').strip()
+            start_date = request.session.get('booking_start_date')
+            end_date = request.session.get('booking_end_date')
 
             # Validate required fields
             if not all([customer_name, customer_email, customer_phone, customer_address, start_date, end_date]):
@@ -255,111 +416,18 @@ def booking_success(request, booking_number):
 def send_booking_confirmation_email(booking):
     """Send booking confirmation email"""
     subject = f"Booking Confirmation - {booking.booking_number}"
-    html_message = render_to_string('emails/booking_confirmation.html', {'booking': booking})
-    plain_message = f"Thank you for your booking. Your booking number is {booking.booking_number}"
+    try:
+        html_message = render_to_string('emails/booking_confirmation.html', {'booking': booking})
+        plain_message = f"Thank you for your booking. Your booking number is {booking.booking_number}"
 
-    send_mail(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [booking.customer_email],
-        html_message=html_message,
-        fail_silently=False,
-    )
-
-def update_cart_item(request, item_id):
-    """Update quantity of item in cart"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            new_quantity = int(data.get('quantity', 1))
-
-            cart = request.session.get('booking_cart', {})
-
-            if str(item_id) in cart:
-                item_data = cart[str(item_id)]
-
-                # Validate quantity against available stock
-                item = HireItem.objects.get(id=item_id)
-                if new_quantity > item.quantity_available:
-                    return JsonResponse({
-                        'success': False,
-                        'error': f'Only {item.quantity_available} units available'
-                    })
-
-                if new_quantity <= 0:
-                    # Remove item if quantity is 0 or less
-                    del cart[str(item_id)]
-                else:
-                    item_data['quantity'] = new_quantity
-                    cart[str(item_id)] = item_data
-
-                request.session['booking_cart'] = cart
-
-                # Recalculate totals
-                subtotal = Decimal('0')
-                cart_items = []
-                for item_id_str, item_data in cart.items():
-                    cart_item = HireItem.objects.get(id=item_id_str)
-                    days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
-                            datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
-                    item_total = cart_item.price_per_day * item_data['quantity'] * days
-                    subtotal += item_total
-
-                    if int(item_id_str) == item_id:
-                        item_total_calc = item_total
-
-                delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
-                grand_total = subtotal + delivery_cost
-                deposit = grand_total * Decimal('0.3')
-
-                return JsonResponse({
-                    'success': True,
-                    'item_total': float(item_total_calc) if 'item_total_calc' in locals() else 0,
-                    'subtotal': float(subtotal),
-                    'grand_total': float(grand_total),
-                    'deposit': float(deposit),
-                    'cart_count': len(cart)
-                })
-
-            return JsonResponse({'success': False, 'error': 'Item not found in cart'})
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
-
-def remove_from_cart(request, item_id):
-    """Remove item from cart"""
-    if request.method == 'POST':
-        cart = request.session.get('booking_cart', {})
-
-        if str(item_id) in cart:
-            del cart[str(item_id)]
-            request.session['booking_cart'] = cart
-
-            # Recalculate totals
-            subtotal = Decimal('0')
-            for item_id_str, item_data in cart.items():
-                item = HireItem.objects.get(id=item_id_str)
-                days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
-                        datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
-                item_total = item.price_per_day * item_data['quantity'] * days
-                subtotal += item_total
-
-            delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
-            grand_total = subtotal + delivery_cost
-            deposit = grand_total * Decimal('0.3')
-
-            return JsonResponse({
-                'success': True,
-                'subtotal': float(subtotal),
-                'grand_total': float(grand_total),
-                'deposit': float(deposit),
-                'cart_count': len(cart)
-            })
-
-        return JsonResponse({'success': False, 'error': 'Item not found in cart'})
-
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [booking.customer_email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
