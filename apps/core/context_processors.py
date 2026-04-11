@@ -14,3 +14,10 @@ def theme_context(request):
         'active_theme': active_theme,
         'available_themes': settings.AVAILABLE_THEMES,
     }
+
+def cart_count_context(request):
+    """Add cart count to all templates"""
+    cart = request.session.get('booking_cart', {})
+    return {
+        'cart_count': len(cart)
+    }

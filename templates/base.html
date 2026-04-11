@@ -144,8 +144,19 @@
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'bookings:cart' %}">
+                        <a class="nav-link position-relative" href="{% url 'bookings:cart' %}">
                             🛒 Cart
+                            {% if cart_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                  id="cart-count" style="font-size: 0.7rem;">
+                                {{ cart_count }}
+                            </span>
+                            {% else %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                  id="cart-count" style="display: none; font-size: 0.7rem;">
+                                0
+                            </span>
+                            {% endif %}
                         </a>
                     </li>
                 </ul>

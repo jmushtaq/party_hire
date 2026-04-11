@@ -1,15 +1,11 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.http import require_POST
-from django.contrib import messages
-from django.core.mail import send_mail
 from django.conf import settings
-from django.template.loader import render_to_string
-from django.utils import timezone
+from django.http import JsonResponse
+from django.shortcuts import render
+from .models import HireItem
 from decimal import Decimal
-from .models import Booking, BookingItem
-from apps.items.models import HireItem, ItemAvailability
+from datetime import datetime
+import json
 import stripe
-from datetime import datetime, timedelta
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -258,3 +254,100 @@ def send_booking_confirmation_email(booking):
         html_message=html_message,
         fail_silently=False,
     )
+
+def update_cart_item(request, item_id):
+    """Update quantity of item in cart"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_quantity = int(data.get('quantity', 1))
+
+            cart = request.session.get('booking_cart', {})
+
+            if str(item_id) in cart:
+                item_data = cart[str(item_id)]
+
+                # Validate quantity against available stock
+                item = HireItem.objects.get(id=item_id)
+                if new_quantity > item.quantity_available:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Only {item.quantity_available} units available'
+                    })
+
+                if new_quantity <= 0:
+                    # Remove item if quantity is 0 or less
+                    del cart[str(item_id)]
+                else:
+                    item_data['quantity'] = new_quantity
+                    cart[str(item_id)] = item_data
+
+                request.session['booking_cart'] = cart
+
+                # Recalculate totals
+                subtotal = Decimal('0')
+                cart_items = []
+                for item_id_str, item_data in cart.items():
+                    cart_item = HireItem.objects.get(id=item_id_str)
+                    days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
+                            datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
+                    item_total = cart_item.price_per_day * item_data['quantity'] * days
+                    subtotal += item_total
+
+                    if int(item_id_str) == item_id:
+                        item_total_calc = item_total
+
+                delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
+                grand_total = subtotal + delivery_cost
+                deposit = grand_total * Decimal('0.3')
+
+                return JsonResponse({
+                    'success': True,
+                    'item_total': float(item_total_calc) if 'item_total_calc' in locals() else 0,
+                    'subtotal': float(subtotal),
+                    'grand_total': float(grand_total),
+                    'deposit': float(deposit),
+                    'cart_count': len(cart)
+                })
+
+            return JsonResponse({'success': False, 'error': 'Item not found in cart'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def remove_from_cart(request, item_id):
+    """Remove item from cart"""
+    if request.method == 'POST':
+        cart = request.session.get('booking_cart', {})
+
+        if str(item_id) in cart:
+            del cart[str(item_id)]
+            request.session['booking_cart'] = cart
+
+            # Recalculate totals
+            subtotal = Decimal('0')
+            for item_id_str, item_data in cart.items():
+                item = HireItem.objects.get(id=item_id_str)
+                days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
+                        datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
+                item_total = item.price_per_day * item_data['quantity'] * days
+                subtotal += item_total
+
+            delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
+            grand_total = subtotal + delivery_cost
+            deposit = grand_total * Decimal('0.3')
+
+            return JsonResponse({
+                'success': True,
+                'subtotal': float(subtotal),
+                'grand_total': float(grand_total),
+                'deposit': float(deposit),
+                'cart_count': len(cart)
+            })
+
+        return JsonResponse({'success': False, 'error': 'Item not found in cart'})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
