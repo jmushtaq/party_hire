@@ -5,6 +5,16 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .date-picker {
+        cursor: pointer;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -13,6 +23,10 @@
         <div class="col-md-6">
             {% if item.image %}
             <img src="{{ item.image.url }}" class="img-fluid rounded" alt="{{ item.name }}">
+            {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+                <p class="text-muted">No image available</p>
+            </div>
             {% endif %}
             
             {% if item.gallery_images %}
@@ -51,25 +65,32 @@
             
             <hr>
             
-            <form method="POST" action="{% url 'bookings:add_to_cart' item.id %}">
+            <form method="POST" action="{% url 'bookings:add_to_cart' item.id %}" id="add-to-cart-form">
                 {% csrf_token %}
                 <div class="mb-3">
-                    <label for="start_date" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    <label for="start_date" class="form-label">Start Date *</label>
+                    <input type="date" class="form-control date-picker" id="start_date" name="start_date" required>
+                    <div class="error-message" id="start-date-error"></div>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="end_date" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    <label for="end_date" class="form-label">End Date *</label>
+                    <input type="date" class="form-control date-picker" id="end_date" name="end_date" required>
+                    <div class="error-message" id="end-date-error"></div>
                 </div>
                 
                 <div class="mb-3">
                     <label for="quantity" class="form-label">Quantity</label>
-                    <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" max="{{ item.quantity_available }}">
+                    <input type="number" class="form-control" id="quantity" name="quantity" 
+                           value="1" min="1" max="{{ item.quantity_available }}">
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-lg">Add to Cart</button>
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                    Add to Cart
+                </button>
             </form>
+            
+            <div id="availability-info" class="mt-3"></div>
         </div>
     </div>
 </div>
@@ -78,16 +99,103 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-    flatpickr("#start_date", {
+    // Get unavailable dates from Django context
+    const unavailableDates = {{ unavailable_dates|safe }};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Configure start date picker
+    const startPicker = flatpickr("#start_date", {
         minDate: "today",
         dateFormat: "Y-m-d",
-        disable: {{ unavailable_dates|safe }}
+        disable: unavailableDates,
+        onChange: function(selectedDates, dateStr, instance) {
+            // Update end date min date
+            if (selectedDates.length > 0) {
+                endPicker.set('minDate', selectedDates[0]);
+                if (endPicker.selectedDates.length > 0 && endPicker.selectedDates[0] < selectedDates[0]) {
+                    endPicker.clear();
+                }
+            }
+            validateDates();
+        }
     });
     
-    flatpickr("#end_date", {
+    // Configure end date picker
+    const endPicker = flatpickr("#end_date", {
         minDate: "today",
         dateFormat: "Y-m-d",
-        disable: {{ unavailable_dates|safe }}
+        disable: unavailableDates,
+        onChange: function(selectedDates, dateStr, instance) {
+            validateDates();
+        }
     });
+    
+    function validateDates() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const startError = document.getElementById('start-date-error');
+        const endError = document.getElementById('end-date-error');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        let isValid = true;
+        
+        if (!startDate) {
+            startError.textContent = 'Please select a start date';
+            isValid = false;
+        } else {
+            startError.textContent = '';
+        }
+        
+        if (!endDate) {
+            endError.textContent = 'Please select an end date';
+            isValid = false;
+        } else if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+            endError.textContent = 'End date must be after start date';
+            isValid = false;
+        } else {
+            endError.textContent = '';
+        }
+        
+        submitBtn.disabled = !isValid;
+        return isValid;
+    }
+    
+    // Validate on form submission
+    document.getElementById('add-to-cart-form').addEventListener('submit', function(e) {
+        if (!validateDates()) {
+            e.preventDefault();
+            alert('Please select both start and end dates before adding to cart.');
+        }
+    });
+    
+    // Calculate number of days and total price
+    function calculatePrice() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const quantity = parseInt(document.getElementById('quantity').value) || 1;
+        const pricePerDay = {{ item.price_per_day }};
+        
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            const total = pricePerDay * quantity * days;
+            
+            const infoDiv = document.getElementById('availability-info');
+            infoDiv.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Booking Summary:</strong><br>
+                    Duration: ${days} day${days > 1 ? 's' : ''}<br>
+                    Total: $${total.toFixed(2)}<br>
+                    Deposit (30%): $${(total * 0.3).toFixed(2)}
+                </div>
+            `;
+        }
+    }
+    
+    document.getElementById('start_date').addEventListener('change', calculatePrice);
+    document.getElementById('end_date').addEventListener('change', calculatePrice);
+    document.getElementById('quantity').addEventListener('change', calculatePrice);
 </script>
 {% endblock %}

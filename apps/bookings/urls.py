@@ -9,4 +9,3 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('success/<str:booking_number>/', views.booking_success, name='booking_success'),
 ]
-
