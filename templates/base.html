@@ -28,7 +28,59 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <style>
-        /* Ensure footer stays at bottom */
+        /* Global z-index fixes */
+        .navbar {
+            z-index: 1030 !important;
+            position: relative;
+        }
+        
+        .dropdown-menu {
+            z-index: 1050 !important;
+        }
+        
+        /* Date range display in navbar */
+        .date-range-display {
+            font-size: 0.85rem;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+        
+        .date-range-display i {
+            margin-right: 5px;
+        }
+        
+        /* Modal styles */
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-custom.active {
+            display: flex;
+        }
+        
+        .modal-content-custom {
+            background: white;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        /* Footer positioning */
         html, body {
             height: 100%;
             margin: 0;
@@ -51,15 +103,15 @@
             margin-top: auto;
         }
         
-        /* Notification styles */
-        .position-fixed {
-            position: fixed !important;
-        }
-        
         /* Quantity widget styles */
         .quantity-widget {
             background: white;
             transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
         }
         
         .quantity-widget:hover {
@@ -67,7 +119,10 @@
         }
         
         .quantity-widget .quantity-btn {
-            color: var(--dark-color, #333);
+            padding: 6px 12px;
+            text-decoration: none;
+            border: none;
+            background: white;
             transition: all 0.2s ease;
         }
         
@@ -77,6 +132,10 @@
         }
         
         .quantity-widget input {
+            width: 60px;
+            text-align: center;
+            border: none;
+            padding: 6px 0;
             -moz-appearance: textfield;
         }
         
@@ -86,28 +145,177 @@
             margin: 0;
         }
         
-        /* Custom alert for remove confirmation */
-        .custom-alert {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10000;
-            min-width: 300px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            animation: slideIn 0.3s ease;
+        /* Calendar range highlighting */
+        .flatpickr-day.selectedRange {
+            background: var(--primary-color, #667eea);
+            border-color: var(--primary-color, #667eea);
         }
         
-        @keyframes slideIn {
+        .flatpickr-day.inRange {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner-large {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid var(--primary-color, #007bff);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Date Tooltip Styles */
+        .date-tooltip {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 10px;
+            z-index: 1070;
+            min-width: 280px;
+            animation: tooltipFadeIn 0.2s ease;
+        }
+
+        @keyframes tooltipFadeIn {
             from {
-                transform: translate(-50%, -70%);
                 opacity: 0;
+                transform: translateX(-50%) translateY(-10px);
             }
             to {
-                transform: translate(-50%, -50%);
                 opacity: 1;
+                transform: translateX(-50%) translateY(0);
             }
         }
+
+        .tooltip-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .tooltip-header {
+            background: linear-gradient(135deg, var(--primary-color, #667eea) 0%, var(--primary-dark, #764ba2) 100%);
+            color: white;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .tooltip-header i {
+            margin-right: 8px;
+        }
+
+        .tooltip-body {
+            padding: 12px 16px;
+            background: white;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        .tooltip-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .tooltip-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .tooltip-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 8px 0;
+        }
+
+        .tooltip-footer {
+            background: #f8f9fa;
+            padding: 10px 16px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-footer i {
+            color: var(--primary-color, #667eea);
+        }
+
+        /* Tooltip arrow */
+        .date-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid white;
+            z-index: 1071;
+        }
+
+        .date-tooltip::after {
+            content: '';
+            position: absolute;
+            top: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 9px solid rgba(0,0,0,0.1);
+            z-index: 1070;
+        }
+
+        /* Responsive tooltip */
+        @media (max-width: 768px) {
+            .date-tooltip {
+                left: auto;
+                right: 0;
+                transform: none;
+                min-width: 260px;
+            }
+            
+            .date-tooltip::before,
+            .date-tooltip::after {
+                left: auto;
+                right: 20px;
+                transform: none;
+            }
+        }
+
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -119,7 +327,7 @@
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-calendar-alt"></i> Party Hire
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -135,51 +343,90 @@
                         </a>
                     </li>
                 </ul>
-                <ul class="navbar-nav">
+                <ul class="navbar-nav align-items-center">
+                    <!-- Date Range Selector Button -->
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm me-2" onclick="openDateModal()">
+                            <i class="fas fa-calendar-alt"></i> 
+                            {% if booking_start_date and booking_end_date %}
+                                Update Hire Dates
+                            {% else %}
+                                Select Hire Dates
+                            {% endif %}
+                        </button>
+                    </li>
+                    
+                    <!-- Date Range Display -->
+                    {% if booking_start_date and booking_end_date %}
+                    <li class="nav-item position-relative">
+                        <span class="date-range-display" id="dateRangeDisplay" 
+                              style="cursor: help; border-bottom: 1px dashed rgba(255,255,255,0.5);">
+                            <i class="fas fa-calendar-check"></i>
+                            {{ booking_start_date|slice:"5:10" }} to {{ booking_end_date|slice:"5:10" }}
+                            <i class="fas fa-info-circle ms-1" style="font-size: 0.7rem;"></i>
+                        </span>
+                        
+                        <!-- Tooltip/Popup -->
+                        <div id="dateTooltip" class="date-tooltip" style="display: none;">
+                            <div class="tooltip-content">
+                                <div class="tooltip-header">
+                                    <i class="fas fa-calendar-alt"></i> Hire Period Details
+                                </div>
+                                <div class="tooltip-body">
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">Start Date:</span>
+                                        <span class="tooltip-value">{{ booking_start_date }}</span>
+                                    </div>
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">End Date:</span>
+                                        <span class="tooltip-value">{{ booking_end_date }}</span>
+                                    </div>
+                                    <div class="tooltip-divider"></div>
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">Duration:</span>
+                                        <span class="tooltip-value" id="tooltipDuration"></span>
+                                    </div>
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">Pickup:</span>
+                                        <span class="tooltip-value">Thursday 3:00 PM onwards</span>
+                                    </div>
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">Return:</span>
+                                        <span class="tooltip-value">Monday by 7:00 PM</span>
+                                    </div>
+                                </div>
+                                <div class="tooltip-footer">
+                                    <i class="fas fa-clock"></i> 
+                                    <span id="daysUntilHire"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
                     <!-- Theme Switcher -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="themeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" id="themeDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-palette"></i> 
                             {% if active_theme == 'default' %}Classic Blue
                             {% elif active_theme == 'elegant' %}Elegant Gold
                             {% elif active_theme == 'modern' %}Modern Gradient
                             {% else %}Theme{% endif %}
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown">
-                            <li>
-                                <a class="dropdown-item {% if active_theme == 'default' %}active{% endif %}" 
-                                   href="#" onclick="switchTheme('default'); return false;">
-                                    <i class="fas fa-palette"></i> Classic Blue
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {% if active_theme == 'elegant' %}active{% endif %}" 
-                                   href="#" onclick="switchTheme('elegant'); return false;">
-                                    <i class="fas fa-crown"></i> Elegant Gold
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {% if active_theme == 'modern' %}active{% endif %}" 
-                                   href="#" onclick="switchTheme('modern'); return false;">
-                                    <i class="fas fa-gradient"></i> Modern Gradient
-                                </a>
-                            </li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="switchTheme('default'); return false;">Classic Blue</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="switchTheme('elegant'); return false;">Elegant Gold</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="switchTheme('modern'); return false;">Modern Gradient</a></li>
                         </ul>
                     </li>
                     
-                    <!-- Cart Icon with Counter -->
+                    <!-- Cart Icon -->
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{% url 'bookings:cart' %}">
                             <i class="fas fa-shopping-cart"></i> Cart
                             {% if cart_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
-                                  id="cart-count" style="font-size: 0.7rem;">
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">
                                 {{ cart_count }}
-                            </span>
-                            {% else %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
-                                  id="cart-count" style="display: none; font-size: 0.7rem;">
-                                0
                             </span>
                             {% endif %}
                         </a>
@@ -188,29 +435,53 @@
             </div>
         </div>
     </nav>
-
-    {% if show_date_picker %}
-    <div class="container mt-3">
-        {% include 'bookings/date_range_picker.html' %}
-    </div>
-    {% endif %}
-
+    
     <!-- Main Content -->
     <main>
         {% if messages %}
         <div class="container mt-3">
             {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
             {% endfor %}
         </div>
         {% endif %}
         
-        {% block content %}
-        {% endblock %}
+        {% block content %}{% endblock %}
     </main>
+    
+    <!-- Date Range Modal -->
+    <div id="dateModal" class="modal-custom">
+        <div class="modal-content-custom">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-calendar-alt"></i> Select Your Hire Dates</h4>
+                <button class="btn-close" onclick="closeDateModal()"></button>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Start Date</label>
+                    <input type="text" id="modal_start_date" class="form-control" placeholder="Select start date">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">End Date</label>
+                    <input type="text" id="modal_end_date" class="form-control" placeholder="Select end date">
+                </div>
+            </div>
+            <div id="modal_calendar_container" class="mt-3"></div>
+            <div class="mt-3">
+                <button class="btn btn-success w-100" onclick="confirmDates()">
+                    <i class="fas fa-check"></i> Confirm Dates
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner-large"></div>
+    </div>
     
     <!-- Footer -->
     <footer class="bg-dark text-white mt-5 py-4">
@@ -218,14 +489,13 @@
             <div class="row">
                 <div class="col-md-4">
                     <h5>About Party Hire</h5>
-                    <p>Your premier destination for party and event equipment hire. Quality items, competitive prices, and excellent service.</p>
+                    <p>Your premier destination for party and event equipment hire.</p>
                 </div>
                 <div class="col-md-4">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="{% url 'items:item_list' %}" class="text-white-50 text-decoration-none">Browse Items</a></li>
-                        <li><a href="{% url 'contact:contact' %}" class="text-white-50 text-decoration-none">Contact Us</a></li>
-                        <li><a href="#" class="text-white-50 text-decoration-none">Terms & Conditions</a></li>
+                        <li><a href="{% url 'items:item_list' %}" class="text-white-50">Browse Items</a></li>
+                        <li><a href="{% url 'contact:contact' %}" class="text-white-50">Contact Us</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -233,7 +503,6 @@
                     <ul class="list-unstyled">
                         <li><i class="fas fa-envelope"></i> info@partyhire.com</li>
                         <li><i class="fas fa-phone"></i> (02) 1234 5678</li>
-                        <li><i class="fas fa-map-marker-alt"></i> Sydney, Australia</li>
                     </ul>
                 </div>
             </div>
@@ -243,77 +512,187 @@
         </div>
     </footer>
     
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
     <script>
-        // Theme switching function
-        function switchTheme(themeName) {
-            // Show loading indicator
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'position-fixed top-50 start-50 translate-middle';
-            loadingDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-            document.body.appendChild(loadingDiv);
+        let modalStartPicker = null;
+        let modalEndPicker = null;
+        let currentStartDate = '{{ booking_start_date|default:"" }}';
+        let currentEndDate = '{{ booking_end_date|default:"" }}';
+        
+        function openDateModal() {
+            const modal = document.getElementById('dateModal');
+            modal.classList.add('active');
             
-            // Store theme preference and reload
+            setTimeout(() => {
+                if (!modalStartPicker) {
+                    modalStartPicker = flatpickr("#modal_start_date", {
+                        dateFormat: "Y-m-d",
+                        minDate: "today",
+                        onChange: function(selectedDates) {
+                            if (selectedDates.length) {
+                                modalEndPicker.set('minDate', selectedDates[0]);
+                            }
+                        }
+                    });
+                    
+                    modalEndPicker = flatpickr("#modal_end_date", {
+                        dateFormat: "Y-m-d",
+                        minDate: "today"
+                    });
+                }
+                
+                if (currentStartDate) modalStartPicker.setDate(currentStartDate);
+                if (currentEndDate) modalEndPicker.setDate(currentEndDate);
+            }, 100);
+        }
+        
+        function closeDateModal() {
+            document.getElementById('dateModal').classList.remove('active');
+        }
+        
+        function confirmDates() {
+            const startDate = modalStartPicker.input.value;
+            const endDate = modalEndPicker.input.value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            closeDateModal();
+            showLoading();
+            
+            fetch('/bookings/set-date-range/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ start_date: startDate, end_date: endDate })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    if (data.unavailable_items && data.unavailable_items.length > 0) {
+                        alert(`Warning: ${data.unavailable_items.length} item(s) were removed because they are not available on these dates.`);
+                    }
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                alert('Error setting dates');
+            });
+        }
+        
+        function switchTheme(themeName) {
             localStorage.setItem('active_theme', themeName);
             window.location.href = window.location.pathname + '?theme=' + themeName;
         }
         
-        // Load saved theme on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const themeParam = urlParams.get('theme');
-            const savedTheme = localStorage.getItem('active_theme');
-            
-            if (themeParam && themeParam !== '{{ active_theme }}') {
-                localStorage.setItem('active_theme', themeParam);
-            } else if (savedTheme && savedTheme !== '{{ active_theme }}' && !themeParam) {
-                window.location.href = window.location.pathname + '?theme=' + savedTheme;
-            }
-        });
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
         
-        function updateCartCount(count) {
-            const cartCountElement = document.getElementById('cart-count');
-            if (cartCountElement) {
-                if (count > 0) {
-                    cartCountElement.textContent = count;
-                    cartCountElement.style.display = 'inline';
-                } else {
-                    cartCountElement.style.display = 'none';
-                }
-            }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
         }
         
         function getCookie(name) {
-            let cookieValue = null;
+            let value = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        value = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
                     }
                 }
             }
-            return cookieValue;
+            return value;
         }
-
+        
         document.addEventListener('DOMContentLoaded', function() {
-                // Find all browse buttons and ensure they work
-                const browseButtons = document.querySelectorAll('.hero-section .btn-light');
-            browseButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                                const href = this.getAttribute('href');
-                    if (href && href !== '#') {
-                                        window.location.href = href;
-                    }
-                });
-            });
+            const urlParams = new URLSearchParams(window.location.search);
+            const themeParam = urlParams.get('theme');
+            if (themeParam) localStorage.setItem('active_theme', themeParam);
         });
+
+        // Date Tooltip Functionality
+        const dateDisplay = document.getElementById('dateRangeDisplay');
+        const dateTooltip = document.getElementById('dateTooltip');
+        let tooltipTimeout;
+
+        if (dateDisplay && dateTooltip) {
+            // Calculate duration and days until hire
+            function updateTooltipInfo() {
+                const startDateStr = '{{ booking_start_date|default:"" }}';
+                const endDateStr = '{{ booking_end_date|default:"" }}';
+                
+                if (startDateStr && endDateStr) {
+                    const start = new Date(startDateStr);
+                    const end = new Date(endDateStr);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    // Calculate duration in days
+                    const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                    document.getElementById('tooltipDuration').textContent = `${durationDays} day${durationDays > 1 ? 's' : ''}`;
+                    
+                    // Calculate days until hire
+                    const daysUntil = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
+                    const daysUntilElement = document.getElementById('daysUntilHire');
+                    
+                    if (daysUntil < 0) {
+                        daysUntilElement.innerHTML = '<i class="fas fa-hourglass-start"></i> Hire period has started';
+                        daysUntilElement.style.color = '#e67e22';
+                    } else if (daysUntil === 0) {
+                        daysUntilElement.innerHTML = '<i class="fas fa-play-circle"></i> Hire starts today!';
+                        daysUntilElement.style.color = '#27ae60';
+                    } else if (daysUntil === 1) {
+                        daysUntilElement.innerHTML = `<i class="fas fa-hourglass-half"></i> Starts tomorrow`;
+                        daysUntilElement.style.color = '#3498db';
+                    } else {
+                        daysUntilElement.innerHTML = `<i class="fas fa-hourglass-half"></i> Starts in ${daysUntil} days`;
+                        daysUntilElement.style.color = '#3498db';
+                    }
+                }
+            }
+            
+            // Show tooltip on hover
+            dateDisplay.addEventListener('mouseenter', function() {
+                clearTimeout(tooltipTimeout);
+                updateTooltipInfo();
+                dateTooltip.style.display = 'block';
+            });
+            
+            // Hide tooltip on mouse leave
+            dateDisplay.addEventListener('mouseleave', function() {
+                tooltipTimeout = setTimeout(function() {
+                    dateTooltip.style.display = 'none';
+                }, 300);
+            });
+            
+            // Keep tooltip visible when hovering over it
+            dateTooltip.addEventListener('mouseenter', function() {
+                clearTimeout(tooltipTimeout);
+                dateTooltip.style.display = 'block';
+            });
+            
+            dateTooltip.addEventListener('mouseleave', function() {
+                tooltipTimeout = setTimeout(function() {
+                    dateTooltip.style.display = 'none';
+                }, 300);
+            });
+        }
     </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

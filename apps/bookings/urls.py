@@ -12,4 +12,5 @@ urlpatterns = [
         path('success/<str:booking_number>/', views.booking_success, name='booking_success'),
         path('set-date-range/', views.set_date_range, name='set_date_range'),
         path('get-date-range/', views.get_date_range, name='get_date_range'),
+        path('check-availability/<int:item_id>/', views.check_availability, name='check_availability'),
 ]

@@ -58,7 +58,7 @@ def booking_cart(request):
     })
 
 def set_date_range(request):
-    """Set the global date range for the booking session"""
+    """Set the global date range and validate cart items"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -66,7 +66,6 @@ def set_date_range(request):
             end_date = data.get('end_date')
 
             if start_date and end_date:
-                # Validate dates
                 start = datetime.strptime(start_date, '%Y-%m-%d')
                 end = datetime.strptime(end_date, '%Y-%m-%d')
 
@@ -76,40 +75,44 @@ def set_date_range(request):
                 if end < start:
                     return JsonResponse({'success': False, 'error': 'End date must be after start date'})
 
-                # Store in session
+                # Store dates in session
                 request.session['booking_start_date'] = start_date
                 request.session['booking_end_date'] = end_date
 
-                # Check availability for all items in cart
+                # Validate and update cart items
                 cart = request.session.get('booking_cart', {})
-                unavailable_items = []
+                items_to_remove = []
 
                 for item_id, item_data in cart.items():
-                    try:
-                        item = HireItem.objects.get(id=item_id)
-                        current_date = start
-                        while current_date <= end:
-                            availability = ItemAvailability.objects.filter(
-                                item=item,
-                                date=current_date.date(),
-                                is_booked=True
-                            ).exists()
-                            if availability:
-                                unavailable_items.append({
-                                    'id': item_id,
-                                    'name': item.name,
-                                    'date': current_date.strftime('%Y-%m-%d')
-                                })
-                                break
-                            current_date += timedelta(days=1)
-                    except HireItem.DoesNotExist:
-                        continue
+                    item = HireItem.objects.get(id=item_id)
+                    current_date = start
+                    is_available = True
+
+                    while current_date <= end:
+                        if ItemAvailability.objects.filter(
+                            item=item, date=current_date.date(), is_booked=True
+                        ).exists():
+                            is_available = False
+                            break
+                        current_date += timedelta(days=1)
+
+                    if is_available:
+                        # Update dates in cart
+                        item_data['start_date'] = start_date
+                        item_data['end_date'] = end_date
+                        cart[item_id] = item_data
+                    else:
+                        items_to_remove.append({'id': item_id, 'name': item.name})
+                        del cart[item_id]
+
+                request.session['booking_cart'] = cart
 
                 return JsonResponse({
                     'success': True,
                     'start_date': start_date,
                     'end_date': end_date,
-                    'unavailable_items': unavailable_items
+                    'unavailable_items': items_to_remove,
+                    'cart_count': len(cart)
                 })
 
         except Exception as e:
@@ -431,3 +434,55 @@ def send_booking_confirmation_email(booking):
     except Exception as e:
         print(f"Failed to send email: {e}")
 
+
+def check_availability(request, item_id):
+    """Check if an item is available for the selected dates"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            quantity = int(data.get('quantity', 1))
+
+            item = get_object_or_404(HireItem, id=item_id)
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+
+            # Check each date in range
+            unavailable_dates = []
+            current_date = start
+            while current_date <= end:
+                availability = ItemAvailability.objects.filter(
+                    item=item,
+                    date=current_date.date(),
+                    is_booked=True
+                ).exists()
+                if availability:
+                    unavailable_dates.append(current_date.strftime('%Y-%m-%d'))
+                current_date += timedelta(days=1)
+
+            if unavailable_dates:
+                return JsonResponse({
+                    'available': False,
+                    'message': f"Not available on: {', '.join(unavailable_dates[:3])}"
+                })
+
+            # Check quantity
+            if quantity > item.quantity_available:
+                return JsonResponse({
+                    'available': False,
+                    'message': f"Only {item.quantity_available} units available"
+                })
+
+            days = (end - start).days + 1
+            total = item.price_per_day * quantity * days
+
+            return JsonResponse({
+                'available': True,
+                'message': f"Available! Total: ${total:.2f} for {days} days"
+            })
+
+        except Exception as e:
+            return JsonResponse({'available': False, 'message': str(e)})
+
+    return JsonResponse({'available': False, 'message': 'Invalid request'})

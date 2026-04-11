@@ -5,8 +5,16 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- Date Range Warning Banner -->
+    {% if not booking_start_date or not booking_end_date %}
+    <div class="alert alert-warning text-center">
+        <i class="fas fa-calendar-alt"></i> 
+        Please <a href="#" onclick="openDateModal(); return false;" class="alert-link">select your hire dates</a> before adding items to cart.
+    </div>
+    {% endif %}
+    
     <div class="row">
-        <!-- Sidebar with categories -->
+        <!-- Sidebar -->
         <div class="col-md-3">
             <div class="card">
                 <div class="card-header">
@@ -14,11 +22,11 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group">
-                        <a href="{% url 'items:item_list' %}" class="list-group-item list-group-item-action {% if not request.resolver_match.kwargs.category_slug %}active{% endif %}">
+                        <a href="{% url 'items:item_list' %}" class="list-group-item list-group-item-action">
                             All Items
                         </a>
                         {% for category in categories %}
-                        <a href="{% url 'items:category_items' category_slug=category.slug %}" class="list-group-item list-group-item-action {% if request.resolver_match.kwargs.category_slug == category.slug %}active{% endif %}">
+                        <a href="{% url 'items:category_items' category_slug=category.slug %}" class="list-group-item list-group-item-action">
                             {{ category.name }}
                         </a>
                         {% endfor %}
@@ -35,32 +43,36 @@
                     <div class="card h-100">
                         {% if item.image %}
                         <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
-                        {% else %}
-                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
-                            <span class="text-white">No Image</span>
-                        </div>
                         {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ item.name }}</h5>
                             <p class="card-text">{{ item.description|truncatewords:15 }}</p>
                             <p class="card-text">
-                                <strong>${{ item.price_per_day }}/day</strong><br>
-                                <small class="text-muted">Available: {{ item.quantity_available }} units</small>
+                                <strong>${{ item.price_per_day }}/day</strong>
                             </p>
-                            <a href="{% url 'items:item_detail' slug=item.slug %}" class="btn btn-primary btn-sm">View Details</a>
+                            
+                            {% if booking_start_date and booking_end_date %}
+                            <a href="{% url 'items:item_detail' slug=item.slug %}" class="btn btn-primary btn-sm w-100">
+                                View Details
+                            </a>
+                            {% else %}
+                            <button class="btn btn-secondary btn-sm w-100" onclick="openDateModal()">
+                                Select Dates First
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 {% empty %}
                 <div class="col-12">
-                    <p class="text-center">No items available in this category.</p>
+                    <p class="text-center">No items available.</p>
                 </div>
                 {% endfor %}
             </div>
 
             <!-- Pagination -->
             {% if is_paginated %}
-            <nav aria-label="Page navigation">
+            <nav>
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
