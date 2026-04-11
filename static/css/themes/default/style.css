@@ -83,3 +83,79 @@ body {
     color: white;
     transform: scale(1.05);
 }
+
+/* Quantity Widget Styles */
+.quantity-widget {
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.quantity-widget:hover {
+    border-color: var(--primary-color);
+}
+
+.quantity-widget .quantity-btn {
+    color: var(--dark-color);
+    transition: all 0.2s ease;
+}
+
+.quantity-widget .quantity-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.quantity-widget input {
+    -moz-appearance: textfield;
+}
+
+.quantity-widget input::-webkit-inner-spin-button,
+.quantity-widget input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Custom alert for remove confirmation */
+.custom-alert {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    min-width: 300px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translate(-50%, -70%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%);
+        opacity: 1;
+    }
+}
+
+/* Footer positioning */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
+    margin-top: auto;
+}
+

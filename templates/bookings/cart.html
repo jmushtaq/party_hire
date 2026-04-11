@@ -36,18 +36,25 @@
                                         <small class="text-muted">{{ item.item.category.name }}</small>
                                     </td>
                                     <td>
-                                        <div class="input-group" style="width: 120px;">
-                                            <button class="btn btn-outline-secondary btn-sm" 
-                                                    onclick="updateQuantity('{{ item.item.id }}', 'decrease')">-</button>
+                                        <div class="quantity-widget" style="display: inline-flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+                                            <button class="btn btn-link btn-sm quantity-btn" 
+                                                    onclick="updateQuantity('{{ item.item.id }}', 'decrease')" 
+                                                    style="padding: 6px 12px; text-decoration: none; border-right: 1px solid #ddd;">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
                                             <input type="number" 
                                                    id="quantity-{{ item.item.id }}" 
                                                    value="{{ item.quantity }}" 
                                                    min="1" 
                                                    max="{{ item.item.quantity_available }}"
-                                                   class="form-control form-control-sm text-center"
+                                                   class="form-control" 
+                                                   style="width: 60px; text-align: center; border: none; padding: 6px 0;"
                                                    onchange="updateQuantity('{{ item.item.id }}', 'set', this.value)">
-                                            <button class="btn btn-outline-secondary btn-sm" 
-                                                    onclick="updateQuantity('{{ item.item.id }}', 'increase')">+</button>
+                                            <button class="btn btn-link btn-sm quantity-btn" 
+                                                    onclick="updateQuantity('{{ item.item.id }}', 'increase')"
+                                                    style="padding: 6px 12px; text-decoration: none; border-left: 1px solid #ddd;">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
                                         </div>
                                     </td>
                                     <td>
@@ -57,9 +64,10 @@
                                     <td>{{ item.days }}</td>
                                     <td>${{ item.item.price_per_day }}</td>
                                     <td class="item-total" id="total-{{ item.item.id }}">${{ item.total|floatformat:2 }}</td>
-                                    <td>
-                                        <button class="btn btn-danger btn-sm" onclick="removeItem('{{ item.item.id }}')">
-                                            <i class="fas fa-trash"></i> Remove
+                                    <td class="text-center">
+                                        <button class="btn btn-link text-danger" onclick="confirmRemove('{{ item.item.id }}', '{{ item.item.name }}')" 
+                                                style="text-decoration: none;" title="Remove item">
+                                            <i class="fas fa-trash-alt fa-lg"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -114,6 +122,30 @@
 </div>
 
 <script>
+function confirmRemove(itemId, itemName) {
+    // Create custom confirmation dialog
+    const modal = document.createElement('div');
+    modal.className = 'custom-alert card';
+    modal.innerHTML = `
+        <div class="card-body">
+            <h5 class="card-title">Remove Item</h5>
+            <p class="card-text">Are you sure you want to remove <strong>${itemName}</strong> from your cart?</p>
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary btn-sm" onclick="this.closest('.custom-alert').remove()">Cancel</button>
+                <button class="btn btn-danger btn-sm" onclick="removeItem('${itemId}'); this.closest('.custom-alert').remove()">Remove</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
 function updateQuantity(itemId, action, value = null) {
     let quantityInput = document.getElementById(`quantity-${itemId}`);
     let currentValue = parseInt(quantityInput.value);
@@ -172,42 +204,61 @@ function updateQuantity(itemId, action, value = null) {
 }
 
 function removeItem(itemId) {
-    if (confirm('Are you sure you want to remove this item from your cart?')) {
-        fetch(`/bookings/remove-from-cart/${itemId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+    fetch(`/bookings/remove-from-cart/${itemId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove row from table
+            const row = document.getElementById(`cart-item-${itemId}`);
+            row.remove();
+            
+            // Update summary totals
+            document.getElementById('subtotal').innerHTML = `$${data.subtotal.toFixed(2)}`;
+            document.getElementById('grand-total').innerHTML = `$${data.grand_total.toFixed(2)}`;
+            document.getElementById('deposit').innerHTML = `$${data.deposit.toFixed(2)}`;
+            
+            // Update cart icon count
+            updateCartCount(data.cart_count);
+            
+            // Show temporary success message
+            showNotification('Item removed from cart', 'success');
+            
+            // If cart is empty, reload page to show empty message
+            if (data.cart_count === 0) {
+                setTimeout(() => location.reload(), 1000);
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove row from table
-                const row = document.getElementById(`cart-item-${itemId}`);
-                row.remove();
-                
-                // Update summary totals
-                document.getElementById('subtotal').innerHTML = `$${data.subtotal.toFixed(2)}`;
-                document.getElementById('grand-total').innerHTML = `$${data.grand_total.toFixed(2)}`;
-                document.getElementById('deposit').innerHTML = `$${data.deposit.toFixed(2)}`;
-                
-                // Update cart icon count
-                updateCartCount(data.cart_count);
-                
-                // If cart is empty, reload page to show empty message
-                if (data.cart_count === 0) {
-                    location.reload();
-                }
-            } else {
-                alert(data.error || 'Error removing item');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error removing item');
-        });
-    }
+        } else {
+            alert(data.error || 'Error removing item');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error removing item');
+    });
+}
+
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
 }
 
 function updateCartCount(count) {

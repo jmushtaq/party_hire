@@ -117,13 +117,18 @@ def add_to_cart(request, item_id):
                 'end_date': end_date
             }
             request.session['booking_cart'] = cart
-            messages.success(request, f"{item.name} added to cart successfully!")
+
+            # Success message - stays on same page
+            messages.success(request, f"✓ {item.name} has been added to your cart!")
+
+            # Return to item detail page instead of cart
+            return redirect('items:item_detail', slug=item.slug)
 
         except ValueError as e:
             messages.error(request, f"Invalid date format. Please select valid dates.")
             return redirect('items:item_detail', slug=item.slug)
 
-    return redirect('bookings:cart')
+    return redirect('items:item_detail', slug=item.slug)
 
 def checkout(request):
     """Checkout process"""
