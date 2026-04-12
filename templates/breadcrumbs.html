@@ -1,20 +1,20 @@
 {% if breadcrumbs %}
-<nav aria-label="breadcrumb" class="container mt-3">
-    <ol class="breadcrumb elegant-breadcrumb">
+<nav aria-label="breadcrumb" style="max-width: 55%; margin: 0 auto; padding: 0 15px;">
+    <ol class="breadcrumb elegant-breadcrumb" style="background: transparent; margin-bottom: 0; padding: 0.5rem 0;">
         <li class="breadcrumb-item">
-            <a href="/" class="breadcrumb-link">
+            <a href="/" class="breadcrumb-link" style="text-decoration: none; color: #6c757d; transition: all 0.3s ease;">
                 <i class="fas fa-home"></i> Home
             </a>
         </li>
         {% for breadcrumb in breadcrumbs %}
             {% if forloop.last %}
-                <li class="breadcrumb-item active" aria-current="page">
+                <li class="breadcrumb-item active" aria-current="page" style="font-weight: 600; background: linear-gradient(135deg, var(--primary-color, #667eea) 0%, var(--primary-dark, #764ba2) 100%); -webkit-background-clip: text; background-clip: text; color: transparent;">
                     {% if breadcrumb.icon %}<i class="{{ breadcrumb.icon }}"></i> {% endif %}
                     {{ breadcrumb.name }}
                 </li>
             {% else %}
                 <li class="breadcrumb-item">
-                    <a href="{{ breadcrumb.url }}" class="breadcrumb-link">
+                    <a href="{{ breadcrumb.url }}" class="breadcrumb-link" style="text-decoration: none; color: #6c757d; transition: all 0.3s ease;">
                         {% if breadcrumb.icon %}<i class="{{ breadcrumb.icon }}"></i> {% endif %}
                         {{ breadcrumb.name }}
                     </a>
@@ -23,4 +23,32 @@
         {% endfor %}
     </ol>
 </nav>
+
+<style>
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        font-size: 1.2rem;
+        font-weight: 300;
+        color: var(--primary-color, #667eea);
+        padding-right: 0.5rem;
+    }
+    
+    .breadcrumb-link:hover {
+        color: var(--primary-color, #667eea) !important;
+        transform: translateX(3px);
+        display: inline-block;
+    }
+    
+    @media (max-width: 992px) {
+        nav[aria-label="breadcrumb"] {
+            max-width: 90% !important;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        nav[aria-label="breadcrumb"] {
+            max-width: 95% !important;
+        }
+    }
+</style>
 {% endif %}

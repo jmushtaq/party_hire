@@ -528,3 +528,51 @@ def check_availability(request, item_id):
             return JsonResponse({'available': False, 'message': str(e)})
 
     return JsonResponse({'available': False, 'message': 'Invalid request'})
+
+def cart_json(request):
+    """Return cart contents as JSON for modal display"""
+    cart = request.session.get('booking_cart', {})
+    items = []
+    subtotal = Decimal('0')
+
+    for item_id, item_data in cart.items():
+        try:
+            item = HireItem.objects.get(id=item_id)
+            start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
+            end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
+            days = (end - start).days + 1
+
+            if item.pricing_type == 'period':
+                periods = max(1, days / 4)
+                unit_label = 'period'
+            elif item.pricing_type == 'day':
+                periods = days
+                unit_label = 'day'
+            else:
+                periods = max(1, days / 7)
+                unit_label = 'week'
+
+            item_total = item.calculate_total_price(item_data['quantity'], start, end)
+            subtotal += item_total
+
+            items.append({
+                'name': item.name,
+                'category': item.category.name,
+                'quantity': item_data['quantity'],
+                'periods': periods,
+                'unit_label': unit_label,
+                'total': float(item_total)
+            })
+        except Exception:
+            continue
+
+    delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
+    grand_total = subtotal + delivery_cost
+
+    return JsonResponse({
+        'items': items,
+        'subtotal': float(subtotal),
+        'delivery_cost': float(delivery_cost),
+        'grand_total': float(grand_total),
+        'cart_count': len(cart)
+    })

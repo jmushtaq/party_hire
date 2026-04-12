@@ -13,4 +13,5 @@ urlpatterns = [
         path('set-date-range/', views.set_date_range, name='set_date_range'),
         path('get-date-range/', views.get_date_range, name='get_date_range'),
         path('check-availability/<int:item_id>/', views.check_availability, name='check_availability'),
+        path('cart-json/', views.cart_json, name='cart_json'),
 ]

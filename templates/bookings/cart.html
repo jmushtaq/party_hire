@@ -13,66 +13,61 @@
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table">
-                            <thead>
+                        <table class="table table-hover">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Item</th>
                                     <th>Quantity</th>
                                     <th>Dates</th>
-                                    <th>
-                                        {% if item.pricing_type == 'period' %}Periods
-                                        {% elif item.pricing_type == 'day' %}Days
-                                        {% else %}Weeks{% endif %}
-                                        <i class="fas fa-question-circle text-muted" 
-                                           data-bs-toggle="tooltip" 
-                                           title="{% if item.pricing_type == 'period' %}Each period = Thursday 3pm to Monday 7pm (4 days){% elif item.pricing_type == 'day' %}Number of days hired{% else %}Number of weeks (7 days){% endif %}">
-                                        </i>
-                                    </th>
+                                    <th>Unit Type</th>
                                     <th>Price</th>
                                     <th>Total</th>
                                     <th></th>
                                 </tr>
                             </thead>
-
                             <tbody>
-                                {% for item in items %}
-                                <tr id="cart-item-{{ item.item.id }}">
+                                {% for cart_item in items %}
+                                <tr id="cart-item-{{ cart_item.item.id }}">
                                     <td>
-                                        <a href="{% url 'items:item_detail' slug=item.item.slug %}" class="text-decoration-none">
-                                            <strong>{{ item.item.name }}</strong>
+                                        <a href="{% url 'items:item_detail' slug=cart_item.item.slug %}" class="text-decoration-none fw-bold">
+                                            {{ cart_item.item.name }}
                                         </a>
                                         <br>
-                                        <small class="text-muted">{{ item.item.category.name }}</small>
+                                        <small class="text-muted">{{ cart_item.item.category.name }}</small>
                                     </td>
                                     <td>
                                         <div class="quantity-widget">
-                                            <button type="button" class="quantity-btn" onclick="updateQuantity('{{ item.item.id }}', 'decrease')">-</button>
-                                            <input type="number" id="quantity-{{ item.item.id }}" value="{{ item.quantity }}" 
-                                                   min="1" max="{{ item.item.quantity_available }}"
-                                                   onchange="updateQuantity('{{ item.item.id }}', 'set', this.value)">
-                                            <button type="button" class="quantity-btn" onclick="updateQuantity('{{ item.item.id }}', 'increase')">+</button>
+                                            <button type="button" class="quantity-btn" onclick="updateQuantity('{{ cart_item.item.id }}', 'decrease')">-</button>
+                                            <input type="number" id="quantity-{{ cart_item.item.id }}" value="{{ cart_item.quantity }}" 
+                                                   min="1" max="{{ cart_item.item.quantity_available }}"
+                                                   style="width: 60px; text-align: center; border: none; padding: 6px 0;"
+                                                   onchange="updateQuantity('{{ cart_item.item.id }}', 'set', this.value)">
+                                            <button type="button" class="quantity-btn" onclick="updateQuantity('{{ cart_item.item.id }}', 'increase')">+</button>
                                         </div>
                                     </td>
                                     <td>
-                                        {{ item.start_date }} to {{ item.end_date }}
+                                        {{ cart_item.start_date|slice:"5:10" }} to {{ cart_item.end_date|slice:"5:10" }}
                                     </td>
                                     <td>
-                                        {{ item.periods }} 
-                                        {% if item.item.pricing_type == 'period' %}period(s)
-                                        {% elif item.item.pricing_type == 'day' %}day(s)
+                                        {{ cart_item.periods|floatformat:0 }} 
+                                        {% if cart_item.item.pricing_type == 'period' %}period(s)
+                                        {% elif cart_item.item.pricing_type == 'day' %}day(s)
                                         {% else %}week(s){% endif %}
                                     </td>
-                                    <td>{{ item.item.get_price_display }}</td>
-                                    <td class="item-total" id="total-{{ item.item.id }}">${{ item.total|floatformat:2 }}</td>
+                                    <td>{{ cart_item.item.get_price_display }}</td>
+                                    <td class="item-total" id="total-{{ cart_item.item.id }}">
+                                        <strong>${{ cart_item.total|floatformat:2 }}</strong>
+                                    </td>
                                     <td class="text-center">
-                                        <button type="button" class="btn btn-link text-danger" onclick="confirmRemove('{{ item.item.id }}', '{{ item.item.name|escapejs }}')">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="showRemoveModal('{{ cart_item.item.id }}', '{{ cart_item.item.name|escapejs }}')"
+                                                title="Remove item">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
-
                         </table>
                     </div>
                 </div>
@@ -80,14 +75,14 @@
         </div>
         
         <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Order Summary</h5>
+            <div class="card sticky-top" style="top: 140px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-receipt"></i> Order Summary</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal:</span>
-                        <span id="subtotal">${{ subtotal|floatformat:2 }}</span>
+                        <span id="subtotal" class="fw-bold">${{ subtotal|floatformat:2 }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Delivery Cost:</span>
@@ -96,17 +91,17 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-                        <strong id="grand-total">${{ total|floatformat:2 }}</strong>
+                        <strong id="grand-total" class="text-primary">${{ total|floatformat:2 }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Deposit Required (30%):</span>
-                        <span class="text-primary" id="deposit">${{ deposit|floatformat:2 }}</span>
+                        <span class="text-success" id="deposit">${{ deposit|floatformat:2 }}</span>
                     </div>
-                    <a href="{% url 'bookings:checkout' %}" class="btn btn-primary btn-lg w-100">
-                        Proceed to Checkout
+                    <a href="{% url 'bookings:checkout' %}" class="btn btn-success btn-lg w-100 mb-2">
+                        <i class="fas fa-credit-card"></i> Proceed to Checkout
                     </a>
-                    <a href="{% url 'items:item_list' %}" class="btn btn-outline-secondary w-100 mt-2">
-                        Continue Shopping
+                    <a href="{% url 'items:item_list' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-shopping-bag"></i> Continue Shopping
                     </a>
                 </div>
             </div>
@@ -114,40 +109,86 @@
     </div>
     {% else %}
     <div class="text-center py-5">
-        <h3>Your cart is empty</h3>
-        <p>Looks like you haven't added any items to your cart yet.</p>
-        <a href="{% url 'items:item_list' %}" class="btn btn-primary">Browse Items</a>
+        <div class="empty-cart">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+            <h3>Your cart is empty</h3>
+            <p class="text-muted">Looks like you haven't added any items to your cart yet.</p>
+            <a href="{% url 'items:item_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-gift"></i> Browse Items
+            </a>
+        </div>
     </div>
     {% endif %}
 </div>
 
+<style>
+.quantity-widget {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+}
+.quantity-widget .quantity-btn {
+    padding: 6px 12px;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+.quantity-widget .quantity-btn:hover {
+    background-color: var(--primary-color, #0d6efd);
+    color: white;
+}
+.quantity-widget input {
+    text-align: center;
+    border: none;
+    padding: 6px 0;
+    width: 50px;
+}
+.quantity-widget input:focus {
+    outline: none;
+}
+.quantity-widget input::-webkit-inner-spin-button,
+.quantity-widget input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.table td {
+    vertical-align: middle;
+}
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+</style>
+
 <script>
-function confirmRemove(itemId, itemName) {
-    // Create custom confirmation dialog
-    const modal = document.createElement('div');
-    modal.className = 'custom-alert card';
-    modal.innerHTML = `
-        <div class="card-body">
-            <h5 class="card-title">Remove Item</h5>
-            <p class="card-text">Are you sure you want to remove <strong>${itemName}</strong> from your cart?</p>
-            <div class="d-flex justify-content-end gap-2">
-                <button class="btn btn-secondary btn-sm" onclick="this.closest('.custom-alert').remove()">Cancel</button>
-                <button class="btn btn-danger btn-sm" onclick="removeItem('${itemId}'); this.closest('.custom-alert').remove()">Remove</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
+let currentRemoveItemId = null;
+
+function showRemoveModal(itemId, itemName) {
+    currentRemoveItemId = itemId;
+    const removeItemNameSpan = document.getElementById('removeItemName');
+    if (removeItemNameSpan) {
+        removeItemNameSpan.textContent = itemName;
+    }
+    const removeModal = new bootstrap.Modal(document.getElementById('removeModal'));
+    removeModal.show();
+}
+
+function confirmRemoveItem() {
+    if (currentRemoveItemId) {
+        removeItem(currentRemoveItemId);
+        const removeModal = bootstrap.Modal.getInstance(document.getElementById('removeModal'));
+        if (removeModal) removeModal.hide();
+    }
 }
 
 function updateQuantity(itemId, action, value = null) {
     let quantityInput = document.getElementById(`quantity-${itemId}`);
+    if (!quantityInput) return;
+    
     let currentValue = parseInt(quantityInput.value);
     let newValue = currentValue;
     
@@ -159,44 +200,45 @@ function updateQuantity(itemId, action, value = null) {
         newValue = parseInt(value);
     }
     
-    // Validate quantity
-    const maxQuantity = parseInt(quantityInput.max);
-    if (newValue < 1) newValue = 1;
+    const maxQuantity = parseInt(quantityInput.max) || 99;
+    if (isNaN(newValue) || newValue < 1) newValue = 1;
     if (newValue > maxQuantity) newValue = maxQuantity;
     
     if (newValue !== currentValue) {
-        // Send AJAX request to update cart
+        showLoading();
         fetch(`/bookings/update-cart/${itemId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify({
-                quantity: newValue
-            })
+            body: JSON.stringify({ quantity: newValue })
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
-                // Update quantity input
                 quantityInput.value = newValue;
+                const totalElement = document.getElementById(`total-${itemId}`);
+                if (totalElement) totalElement.innerHTML = `<strong>$${data.item_total.toFixed(2)}</strong>`;
                 
-                // Update item total
-                document.getElementById(`total-${itemId}`).innerHTML = `$${data.item_total.toFixed(2)}`;
+                const subtotalEl = document.getElementById('subtotal');
+                const grandTotalEl = document.getElementById('grand-total');
+                const depositEl = document.getElementById('deposit');
                 
-                // Update summary totals
-                document.getElementById('subtotal').innerHTML = `$${data.subtotal.toFixed(2)}`;
-                document.getElementById('grand-total').innerHTML = `$${data.grand_total.toFixed(2)}`;
-                document.getElementById('deposit').innerHTML = `$${data.deposit.toFixed(2)}`;
-                
-                // Update cart icon count
+                if (subtotalEl) subtotalEl.textContent = `$${data.subtotal.toFixed(2)}`;
+                if (grandTotalEl) grandTotalEl.textContent = `$${data.grand_total.toFixed(2)}`;
+                if (depositEl) depositEl.textContent = `$${data.deposit.toFixed(2)}`;
                 updateCartCount(data.cart_count);
+                
+                // Show success notification
+                showNotification('Quantity updated', 'success');
             } else {
                 alert(data.error || 'Error updating quantity');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error:', error);
             alert('Error updating quantity');
         });
@@ -204,6 +246,7 @@ function updateQuantity(itemId, action, value = null) {
 }
 
 function removeItem(itemId) {
+    showLoading();
     fetch(`/bookings/remove-from-cart/${itemId}/`, {
         method: 'POST',
         headers: {
@@ -213,23 +256,22 @@ function removeItem(itemId) {
     })
     .then(response => response.json())
     .then(data => {
+        hideLoading();
         if (data.success) {
-            // Remove row from table
             const row = document.getElementById(`cart-item-${itemId}`);
-            row.remove();
+            if (row) row.remove();
             
-            // Update summary totals
-            document.getElementById('subtotal').innerHTML = `$${data.subtotal.toFixed(2)}`;
-            document.getElementById('grand-total').innerHTML = `$${data.grand_total.toFixed(2)}`;
-            document.getElementById('deposit').innerHTML = `$${data.deposit.toFixed(2)}`;
+            const subtotalEl = document.getElementById('subtotal');
+            const grandTotalEl = document.getElementById('grand-total');
+            const depositEl = document.getElementById('deposit');
             
-            // Update cart icon count
+            if (subtotalEl) subtotalEl.textContent = `$${data.subtotal.toFixed(2)}`;
+            if (grandTotalEl) grandTotalEl.textContent = `$${data.grand_total.toFixed(2)}`;
+            if (depositEl) depositEl.textContent = `$${data.deposit.toFixed(2)}`;
             updateCartCount(data.cart_count);
             
-            // Show temporary success message
-            showNotification('Item removed from cart', 'success');
+            showNotification('Item removed from cart', 'info');
             
-            // If cart is empty, reload page to show empty message
             if (data.cart_count === 0) {
                 setTimeout(() => location.reload(), 1000);
             }
@@ -238,27 +280,10 @@ function removeItem(itemId) {
         }
     })
     .catch(error => {
+        hideLoading();
         console.error('Error:', error);
         alert('Error removing item');
     });
-}
-
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.minWidth = '300px';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
 }
 
 function updateCartCount(count) {
@@ -273,19 +298,51 @@ function updateCartCount(count) {
     }
 }
 
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.top = '80px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '250px';
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
 function getCookie(name) {
-    let cookieValue = null;
+    let value = null;
     if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
         for (let i = 0; i < cookies.length; i++) {
             const cookie = cookies[i].trim();
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                value = decodeURIComponent(cookie.substring(name.length + 1));
                 break;
             }
         }
     }
-    return cookieValue;
+    return value;
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmBtn = document.getElementById('confirmRemoveBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', confirmRemoveItem);
+    }
+});
 </script>
 {% endblock %}
