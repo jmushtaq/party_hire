@@ -21,7 +21,17 @@
             <p class="text-muted">Category: {{ item.category.name }}</p>
             <hr>
             
-            <h3>${{ item.price_per_day }}/day</h3>
+            <h3>{{ item.get_price_display }}</h3>
+            <p class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                {% if item.pricing_type == 'period' %}
+                    Standard hire period: Thursday 3pm to Monday 7pm (4 days)
+                {% elif item.pricing_type == 'day' %}
+                    Priced per day
+                {% else %}
+                    Priced per week (7 days)
+                {% endif %}
+            </p>
             <p class="text-muted">Deposit: {{ item.deposit_percentage }}%</p>
             
             <hr>

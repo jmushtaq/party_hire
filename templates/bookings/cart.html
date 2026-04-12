@@ -19,12 +19,21 @@
                                     <th>Item</th>
                                     <th>Quantity</th>
                                     <th>Dates</th>
-                                    <th>Days</th>
-                                    <th>Price/Day</th>
+                                    <th>
+                                        {% if item.pricing_type == 'period' %}Periods
+                                        {% elif item.pricing_type == 'day' %}Days
+                                        {% else %}Weeks{% endif %}
+                                        <i class="fas fa-question-circle text-muted" 
+                                           data-bs-toggle="tooltip" 
+                                           title="{% if item.pricing_type == 'period' %}Each period = Thursday 3pm to Monday 7pm (4 days){% elif item.pricing_type == 'day' %}Number of days hired{% else %}Number of weeks (7 days){% endif %}">
+                                        </i>
+                                    </th>
+                                    <th>Price</th>
                                     <th>Total</th>
                                     <th></th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 {% for item in items %}
                                 <tr id="cart-item-{{ item.item.id }}">
@@ -36,43 +45,34 @@
                                         <small class="text-muted">{{ item.item.category.name }}</small>
                                     </td>
                                     <td>
-                                        <div class="quantity-widget" style="display: inline-flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
-                                            <button class="btn btn-link btn-sm quantity-btn" 
-                                                    onclick="updateQuantity('{{ item.item.id }}', 'decrease')" 
-                                                    style="padding: 6px 12px; text-decoration: none; border-right: 1px solid #ddd;">
-                                                <i class="fas fa-minus"></i>
-                                            </button>
-                                            <input type="number" 
-                                                   id="quantity-{{ item.item.id }}" 
-                                                   value="{{ item.quantity }}" 
-                                                   min="1" 
-                                                   max="{{ item.item.quantity_available }}"
-                                                   class="form-control" 
-                                                   style="width: 60px; text-align: center; border: none; padding: 6px 0;"
+                                        <div class="quantity-widget">
+                                            <button type="button" class="quantity-btn" onclick="updateQuantity('{{ item.item.id }}', 'decrease')">-</button>
+                                            <input type="number" id="quantity-{{ item.item.id }}" value="{{ item.quantity }}" 
+                                                   min="1" max="{{ item.item.quantity_available }}"
                                                    onchange="updateQuantity('{{ item.item.id }}', 'set', this.value)">
-                                            <button class="btn btn-link btn-sm quantity-btn" 
-                                                    onclick="updateQuantity('{{ item.item.id }}', 'increase')"
-                                                    style="padding: 6px 12px; text-decoration: none; border-left: 1px solid #ddd;">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
+                                            <button type="button" class="quantity-btn" onclick="updateQuantity('{{ item.item.id }}', 'increase')">+</button>
                                         </div>
                                     </td>
                                     <td>
-                                        {{ item.start_date }} to {{ item.end_date }}<br>
-                                        <small class="text-muted">{{ item.days }} days</small>
+                                        {{ item.start_date }} to {{ item.end_date }}
                                     </td>
-                                    <td>{{ item.days }}</td>
-                                    <td>${{ item.item.price_per_day }}</td>
+                                    <td>
+                                        {{ item.periods }} 
+                                        {% if item.item.pricing_type == 'period' %}period(s)
+                                        {% elif item.item.pricing_type == 'day' %}day(s)
+                                        {% else %}week(s){% endif %}
+                                    </td>
+                                    <td>{{ item.item.get_price_display }}</td>
                                     <td class="item-total" id="total-{{ item.item.id }}">${{ item.total|floatformat:2 }}</td>
                                     <td class="text-center">
-                                        <button class="btn btn-link text-danger" onclick="confirmRemove('{{ item.item.id }}', '{{ item.item.name }}')" 
-                                                style="text-decoration: none;" title="Remove item">
-                                            <i class="fas fa-trash-alt fa-lg"></i>
+                                        <button type="button" class="btn btn-link text-danger" onclick="confirmRemove('{{ item.item.id }}', '{{ item.item.name|escapejs }}')">
+                                            <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
+
                         </table>
                     </div>
                 </div>

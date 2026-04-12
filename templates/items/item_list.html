@@ -48,7 +48,12 @@
                             <h5 class="card-title">{{ item.name }}</h5>
                             <p class="card-text">{{ item.description|truncatewords:15 }}</p>
                             <p class="card-text">
-                                <strong>${{ item.price_per_day }}/day</strong>
+                                <strong>{{ item.get_price_display }}</strong>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle" data-bs-toggle="tooltip" 
+                                       title="{% if item.pricing_type == 'period' %}Standard hire period: Thursday 3pm - Monday 7pm{% elif item.pricing_type == 'day' %}Priced per day{% else %}Priced per week{% endif %}">
+                                    </i>
+                                </small>
                             </p>
                             
                             {% if booking_start_date and booking_end_date %}

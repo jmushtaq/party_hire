@@ -15,8 +15,11 @@ import json
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+
+from decimal import Decimal
+
 def booking_cart(request):
-    """Display shopping cart"""
+    """Display shopping cart with dynamic pricing based on item type"""
     cart = request.session.get('booking_cart', {})
     items = []
     total = Decimal('0')
@@ -30,19 +33,38 @@ def booking_cart(request):
             if not start_date or not end_date:
                 continue
 
-            days = (datetime.strptime(end_date, '%Y-%m-%d') -
-                    datetime.strptime(start_date, '%Y-%m-%d')).days + 1
-            item_total = item.price_per_day * item_data['quantity'] * days
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            days = (end - start).days + 1
+
+            # Calculate total using the item's method
+            quantity = int(item_data['quantity'])
+            item_total = item.calculate_total_price(quantity, start, end)
+
+            # Calculate unit count for display
+            if item.pricing_type == 'period':
+                unit_count = max(Decimal('1'), Decimal(str(days)) / Decimal('4'))
+                unit_label = 'period'
+            elif item.pricing_type == 'day':
+                unit_count = Decimal(str(days))
+                unit_label = 'day'
+            else:  # week
+                unit_count = max(Decimal('1'), Decimal(str(days)) / Decimal('7'))
+                unit_label = 'week'
+
             total += item_total
             items.append({
                 'item': item,
-                'quantity': item_data['quantity'],
+                'quantity': quantity,
                 'start_date': start_date,
                 'end_date': end_date,
                 'days': days,
+                'periods': float(unit_count),  # Convert to float for template display
+                'unit_label': unit_label,
                 'total': item_total
             })
-        except (KeyError, ValueError, HireItem.DoesNotExist):
+        except (KeyError, ValueError, HireItem.DoesNotExist) as e:
+            print(f"Error processing cart item {item_id}: {e}")
             continue
 
     delivery_cost = Decimal('50') if total > 0 else Decimal('0')
@@ -142,7 +164,7 @@ def get_date_range(request):
     })
 
 def add_to_cart(request, item_id):
-    """Add item to shopping cart with global date range"""
+    """Add item to shopping cart with dynamic pricing"""
     item = get_object_or_404(HireItem, id=item_id)
 
     # Check if date range is set
@@ -168,6 +190,7 @@ def add_to_cart(request, item_id):
             start = datetime.strptime(start_date, '%Y-%m-%d')
             end = datetime.strptime(end_date, '%Y-%m-%d')
 
+            # Check availability for each date
             current_date = start
             unavailable_dates = []
             while current_date <= end:
@@ -187,6 +210,9 @@ def add_to_cart(request, item_id):
                 )
                 return redirect('items:item_detail', slug=item.slug)
 
+            # Calculate total for success message
+            total_price = item.calculate_total_price(quantity, start, end)
+
             # Add to cart
             cart = request.session.get('booking_cart', {})
             cart[str(item_id)] = {
@@ -196,11 +222,14 @@ def add_to_cart(request, item_id):
             }
             request.session['booking_cart'] = cart
 
-            messages.success(request, f"✓ {item.name} has been added to your cart!")
+            messages.success(
+                request,
+                f"✓ {item.name} added to cart! Total: ${total_price:,.2f} ({item.get_price_display()})"
+            )
             return redirect('items:item_list')
 
-        except ValueError as e:
-            messages.error(request, f"Invalid quantity")
+        except ValueError:
+            messages.error(request, "Invalid quantity")
             return redirect('items:item_detail', slug=item.slug)
 
     return redirect('items:item_detail', slug=item.slug)
@@ -226,7 +255,6 @@ def update_cart_item(request, item_id):
                     })
 
                 if new_quantity <= 0:
-                    # Remove item if quantity is 0 or less
                     del cart[str(item_id)]
                 else:
                     item_data['quantity'] = new_quantity
@@ -237,11 +265,18 @@ def update_cart_item(request, item_id):
                 # Recalculate totals
                 subtotal = Decimal('0')
                 item_total_calc = Decimal('0')
+                start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
+                end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
+
                 for item_id_str, item_data in cart.items():
                     cart_item = HireItem.objects.get(id=item_id_str)
-                    days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
-                            datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
-                    item_total = cart_item.price_per_day * item_data['quantity'] * days
+                    cart_start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
+                    cart_end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
+                    item_total = cart_item.calculate_total_price(
+                        item_data['quantity'],
+                        cart_start,
+                        cart_end
+                    )
                     subtotal += item_total
 
                     if int(item_id_str) == item_id:
@@ -280,9 +315,13 @@ def remove_from_cart(request, item_id):
             subtotal = Decimal('0')
             for item_id_str, item_data in cart.items():
                 item = HireItem.objects.get(id=item_id_str)
-                days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
-                        datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
-                item_total = item.price_per_day * item_data['quantity'] * days
+                start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
+                end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
+                item_total = item.calculate_total_price(
+                    item_data['quantity'],
+                    start,
+                    end
+                )
                 subtotal += item_total
 
             delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
@@ -337,16 +376,19 @@ def checkout(request):
             subtotal = Decimal('0')
             for item_id, item_data in cart.items():
                 item = HireItem.objects.get(id=item_id)
-                days = (datetime.strptime(item_data['end_date'], '%Y-%m-%d') -
-                        datetime.strptime(item_data['start_date'], '%Y-%m-%d')).days + 1
-                item_total = item.price_per_day * item_data['quantity'] * days
+                start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
+                end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
+                days = (end - start).days + 1
+
+                # Use the new calculation method
+                item_total = item.calculate_total_price(item_data['quantity'], start, end)
                 subtotal += item_total
 
                 BookingItem.objects.create(
                     booking=booking,
                     item=item,
                     quantity=item_data['quantity'],
-                    price_per_day=item.price_per_day,
+                    price_per_day=item.price,  # Store the base price
                     number_of_days=days,
                     total_price=item_total
                 )
