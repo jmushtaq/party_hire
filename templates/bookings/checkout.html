@@ -40,13 +40,15 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="start_date" class="form-label">Start Date *</label>
-                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                                           value="{{ booking_start_date }}" readonly>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="end_date" class="form-label">End Date *</label>
-                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                                           value="{{ booking_end_date }}" readonly>
                                 </div>
                             </div>
                         </div>
@@ -56,18 +58,42 @@
                             <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary btn-lg w-100">
-                            Proceed to Payment
-                        </button>
+                        <!-- Payment Method Section -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Payment Method</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal" checked>
+                                    <label class="form-check-label" for="paypal">
+                                        <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" alt="PayPal" style="height: 25px;">
+                                        PayPal (Credit Card or PayPal Account)
+                                    </label>
+                                </div>
+                                
+                                <div class="alert alert-info small">
+                                    <i class="fas fa-info-circle"></i> You will be redirected to PayPal to complete your payment securely.
+                                    Only the deposit (30%) is required now. The balance will be collected before delivery.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success btn-lg w-100" id="submit-btn">
+                                <i class="fas fa-credit-card"></i> Proceed to Payment
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
         
         <div class="col-md-5">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Your Cart Summary</h5>
+            <div class="card sticky-top" style="top: 140px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-receipt"></i> Order Summary</h5>
                 </div>
                 <div class="card-body">
                     {% load booking_extras %}
@@ -75,95 +101,127 @@
                         {% if cart %}
                             {% for item_id, item_data in cart.items %}
                                 {% with item=item_id|get_item_from_db %}
-                                <div class="mb-3">
-                                    <strong>{{ item.name }}</strong><br>
-                                    Quantity: {{ item_data.quantity }}<br>
-                                    Dates: {{ item_data.start_date }} to {{ item_data.end_date }}
+                                <div class="mb-3 pb-2 border-bottom">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>{{ item.name }}</strong><br>
+                                            <small class="text-muted">Quantity: {{ item_data.quantity }}</small><br>
+                                            <small class="text-muted">Dates: {{ item_data.start_date }} to {{ item_data.end_date }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            {% if item.pricing_type == 'period' %}
+                                                <small class="text-muted">{{ item.get_price_display }}</small>
+                                            {% elif item.pricing_type == 'day' %}
+                                                <small class="text-muted">{{ item.get_price_display }}</small>
+                                            {% else %}
+                                                <small class="text-muted">{{ item.get_price_display }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endwith %}
                             {% endfor %}
+                        {% else %}
+                            <p class="text-muted">Your cart is empty</p>
                         {% endif %}
                     {% endwith %}
+                    
                     <hr>
-                    <div class="d-flex justify-content-between gap-2">
-                        <button type="button" class="btn btn-outline-info" onclick="loadViewCartModal()">
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">${{ subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Cost:</span>
+                        <span>${{ delivery_cost|floatformat:2 }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <strong id="grand-total">${{ total|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Deposit Required (30%):</span>
+                        <span class="text-primary" id="deposit">${{ deposit|floatformat:2 }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-info flex-grow-1" onclick="loadViewCartModal()">
                             <i class="fas fa-eye"></i> View Cart
                         </button>
-                        <a href="{% url 'bookings:cart' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'bookings:cart' %}" class="btn btn-outline-secondary flex-grow-1">
                             <i class="fas fa-edit"></i> Edit Cart
                         </a>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // Set min dates to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('start_date').min = today;
-    document.getElementById('end_date').min = today;
+function loadViewCartModal() {
+    const modal = new bootstrap.Modal(document.getElementById('viewCartModal'));
+    const modalBody = document.getElementById('viewCartContent');
     
-    // Update end date min when start date changes
-    document.getElementById('start_date').addEventListener('change', function() {
-        document.getElementById('end_date').min = this.value;
-        if (document.getElementById('end_date').value < this.value) {
-            document.getElementById('end_date').value = this.value;
-        }
-    });
-
-    function loadViewCartModal() {
-        const modal = new bootstrap.Modal(document.getElementById('viewCartModal'));
-        const modalBody = document.getElementById('viewCartContent');
-        
-        // Show loading
-        modalBody.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading your cart...</p>
+    modalBody.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-        `;
-        
-        modal.show();
-        
-        // Fetch cart contents
-        fetch('/bookings/cart-json/')
-            .then(response => response.json())
-            .then(data => {
-                if (data.items && data.items.length > 0) {
-                    let html = '<div class="table-responsive"><table class="table table-sm">';
-                    html += '<thead><tr><th>Item</th><th>Qty</th><th>Periods</th><th>Total</th></tr></thead><tbody>';
-                    
-                    data.items.forEach(item => {
-                        html += `
-                            <tr>
-                                <td><strong>${item.name}</strong><br><small class="text-muted">${item.category}</small></td>
-                                <td>${item.quantity}</td>
-                                <td>${item.periods} ${item.unit_label}(s)</td>
-                                <td>$${item.total.toFixed(2)}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    html += '</tbody></table></div>';
-                    html += `<div class="mt-3"><strong>Subtotal:</strong> $${data.subtotal.toFixed(2)}<br>`;
-                    html += `<strong>Delivery:</strong> $${data.delivery_cost.toFixed(2)}<br>`;
-                    html += `<strong>Total:</strong> $${data.grand_total.toFixed(2)}</div>`;
-                    
-                    modalBody.innerHTML = html;
-                } else {
-                    modalBody.innerHTML = '<p class="text-center text-muted">Your cart is empty</p>';
-                }
-            })
-            .catch(error => {
-                modalBody.innerHTML = '<p class="text-center text-danger">Error loading cart. Please try again.</p>';
-            });
+            <p class="mt-2">Loading your cart...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    fetch('/bookings/cart-json/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.items && data.items.length > 0) {
+                let html = '<div class="table-responsive"><table class="table table-sm">';
+                html += '<thead><tr><th>Item</th><th>Qty</th><th>Unit Type</th><th>Total</th></tr></thead><tbody>';
+                
+                data.items.forEach(item => {
+                    html += `
+                        <tr>
+                            <td><strong>${item.name}</strong><br><small class="text-muted">${item.category}</small></td>
+                            <td>${item.quantity}</td>
+                            <td>${item.periods} ${item.unit_label}(s)</td>
+                            <td>$${item.total.toFixed(2)}</td
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                html += `<div class="mt-3"><strong>Subtotal:</strong> $${data.subtotal.toFixed(2)}<br>`;
+                html += `<strong>Delivery:</strong> $${data.delivery_cost.toFixed(2)}<br>`;
+                html += `<strong>Total:</strong> $${data.grand_total.toFixed(2)}</div>`;
+                
+                modalBody.innerHTML = html;
+            } else {
+                modalBody.innerHTML = '<p class="text-center text-muted">Your cart is empty</p>';
+            }
+        })
+        .catch(error => {
+            modalBody.innerHTML = '<p class="text-center text-danger">Error loading cart. Please try again.</p>';
+        });
+}
+
+// Set min dates to today
+const today = new Date().toISOString().split('T')[0];
+const startDateInput = document.getElementById('start_date');
+const endDateInput = document.getElementById('end_date');
+
+if (startDateInput && endDateInput) {
+    // Dates are readonly from session, but we can still validate
+    if (startDateInput.value < today) {
+        startDateInput.value = today;
     }
+    if (endDateInput.value < startDateInput.value) {
+        endDateInput.value = startDateInput.value;
+    }
+}
 </script>
 {% endblock %}

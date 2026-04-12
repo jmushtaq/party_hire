@@ -9,14 +9,8 @@ from django.http import JsonResponse
 from decimal import Decimal
 from .models import Booking, BookingItem
 from apps.items.models import HireItem, ItemAvailability
-import stripe
 from datetime import datetime, timedelta
 import json
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
-
-from decimal import Decimal
 
 def booking_cart(request):
     """Display shopping cart with dynamic pricing based on item type"""
@@ -59,7 +53,7 @@ def booking_cart(request):
                 'start_date': start_date,
                 'end_date': end_date,
                 'days': days,
-                'periods': float(unit_count),  # Convert to float for template display
+                'periods': float(unit_count),
                 'unit_label': unit_label,
                 'total': item_total
             })
@@ -341,7 +335,7 @@ def remove_from_cart(request, item_id):
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 def checkout(request):
-    """Checkout process"""
+    """Checkout process - creates booking and prepares for payment"""
     if request.method == 'POST':
         cart = request.session.get('booking_cart', {})
         if not cart:
@@ -360,7 +354,15 @@ def checkout(request):
             # Validate required fields
             if not all([customer_name, customer_email, customer_phone, customer_address, start_date, end_date]):
                 messages.error(request, "Please fill in all required fields")
-                return render(request, 'bookings/checkout.html')
+                # Recalculate totals for the form
+                cart = request.session.get('booking_cart', {})
+                subtotal, delivery_cost, grand_total, deposit = calculate_cart_totals(cart)
+                return render(request, 'bookings/checkout.html', {
+                    'subtotal': subtotal,
+                    'delivery_cost': delivery_cost,
+                    'total': grand_total,
+                    'deposit': deposit
+                })
 
             # Create booking
             booking = Booking.objects.create(
@@ -380,7 +382,7 @@ def checkout(request):
                 end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
                 days = (end - start).days + 1
 
-                # Use the new calculation method
+                # Use the calculation method
                 item_total = item.calculate_total_price(item_data['quantity'], start, end)
                 subtotal += item_total
 
@@ -394,8 +396,6 @@ def checkout(request):
                 )
 
                 # Mark dates as unavailable
-                start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
-                end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
                 current = start
                 while current <= end:
                     ItemAvailability.objects.get_or_create(
@@ -409,18 +409,9 @@ def checkout(request):
             booking.calculate_total()
             booking.save()
 
-            # Create Stripe payment intent
-            try:
-                intent = stripe.PaymentIntent.create(
-                    amount=int(booking.deposit_amount * 100),
-                    currency='aud',
-                    metadata={'booking_id': booking.id}
-                )
-                client_secret = intent.client_secret
-            except Exception as e:
-                # If Stripe fails, still create booking but mark as pending payment
-                client_secret = None
-                messages.warning(request, "Payment processing is not fully configured. Please contact us to complete your booking.")
+            # Store booking info in session for payment verification
+            request.session['booking_email'] = customer_email
+            request.session['pending_booking_id'] = booking.id
 
             # Clear cart
             del request.session['booking_cart']
@@ -431,31 +422,60 @@ def checkout(request):
             except Exception as e:
                 print(f"Email error: {e}")
 
-            if client_secret:
-                return render(request, 'bookings/payment.html', {
-                    'booking': booking,
-                    'client_secret': client_secret,
-                    'stripe_public_key': settings.STRIPE_PUBLIC_KEY
-                })
-            else:
-                messages.info(request, f"Booking #{booking.booking_number} created. Please contact us to complete payment.")
-                return redirect('bookings:booking_success', booking_number=booking.booking_number)
+            # Redirect to payment page
+            return render(request, 'bookings/payment.html', {
+                'booking': booking,
+                'payment_method': 'paypal'
+            })
 
         except Exception as e:
             messages.error(request, f"Error creating booking: {str(e)}")
             return redirect('bookings:cart')
 
-    # GET request - show checkout form
+    # GET request - show checkout form with cart totals
     cart = request.session.get('booking_cart', {})
     if not cart:
         messages.error(request, "Your cart is empty")
         return redirect('items:item_list')
 
-    return render(request, 'bookings/checkout.html')
+    # Calculate cart totals
+    subtotal, delivery_cost, grand_total, deposit = calculate_cart_totals(cart)
+
+    return render(request, 'bookings/checkout.html', {
+        'subtotal': subtotal,
+        'delivery_cost': delivery_cost,
+        'total': grand_total,
+        'deposit': deposit
+    })
+
+def calculate_cart_totals(cart):
+    """Helper function to calculate cart totals"""
+    subtotal = Decimal('0')
+
+    for item_id, item_data in cart.items():
+        try:
+            item = HireItem.objects.get(id=item_id)
+            start = datetime.strptime(item_data['start_date'], '%Y-%m-%d')
+            end = datetime.strptime(item_data['end_date'], '%Y-%m-%d')
+            item_total = item.calculate_total_price(item_data['quantity'], start, end)
+            subtotal += item_total
+        except Exception:
+            continue
+
+    delivery_cost = Decimal('50') if subtotal > 0 else Decimal('0')
+    grand_total = subtotal + delivery_cost
+    deposit = grand_total * Decimal('0.3')
+
+    return subtotal, delivery_cost, grand_total, deposit
 
 def booking_success(request, booking_number):
     """Display booking success page"""
     booking = get_object_or_404(Booking, booking_number=booking_number)
+    # Clear session data
+    if 'pending_booking_id' in request.session:
+        del request.session['pending_booking_id']
+    if 'booking_email' in request.session:
+        del request.session['booking_email']
     return render(request, 'bookings/booking_success.html', {'booking': booking})
 
 def send_booking_confirmation_email(booking):
@@ -475,7 +495,6 @@ def send_booking_confirmation_email(booking):
         )
     except Exception as e:
         print(f"Failed to send email: {e}")
-
 
 def check_availability(request, item_id):
     """Check if an item is available for the selected dates"""
@@ -516,12 +535,13 @@ def check_availability(request, item_id):
                     'message': f"Only {item.quantity_available} units available"
                 })
 
+            # Calculate total using the item's pricing method
+            total = item.calculate_total_price(quantity, start, end)
             days = (end - start).days + 1
-            total = item.price_per_day * quantity * days
 
             return JsonResponse({
                 'available': True,
-                'message': f"Available! Total: ${total:.2f} for {days} days"
+                'message': f"Available! Total: ${total:.2f} for {days} days ({item.get_price_display()})"
             })
 
         except Exception as e:

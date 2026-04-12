@@ -1,129 +1,32 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Payment - Party Hire{% endblock %}
-
-{% block extra_css %}
-<script src="https://js.stripe.com/v3/"></script>
-<style>
-    .StripeElement {
-        background-color: white;
-        padding: 10px 12px;
-        border-radius: 4px;
-        border: 1px solid #ced4da;
-        box-shadow: 0 1px 3px 0 #e6ebf1;
-        -webkit-transition: box-shadow 150ms ease;
-        transition: box-shadow 150ms ease;
-    }
-    .StripeElement--focus {
-        box-shadow: 0 1px 3px 0 #cfd7df;
-    }
-    .StripeElement--invalid {
-        border-color: #fa755a;
-    }
-    .StripeElement--webkit-autofill {
-        background-color: #fefde5 !important;
-    }
-</style>
-{% endblock %}
+{% block title %}Processing Payment - Party Hire{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-5">
     <div class="row">
         <div class="col-md-6 offset-md-3">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Complete Your Booking</h4>
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Redirecting to PayPal...</h4>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>Booking Number:</strong> {{ booking.booking_number }}<br>
-                        <strong>Total Amount:</strong> ${{ booking.total_amount|floatformat:2 }}<br>
-                        <strong>Deposit Required:</strong> ${{ booking.deposit_amount|floatformat:2 }}
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                    
-                    <form action="" method="post" id="payment-form">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="card-element" class="form-label">Credit or Debit Card</label>
-                            <div id="card-element" class="StripeElement">
-                                <!-- A Stripe Element will be inserted here. -->
-                            </div>
-                            <div id="card-errors" role="alert" class="text-danger mt-2"></div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-button">
-                            Pay Deposit ${{ booking.deposit_amount|floatformat:2 }}
-                        </button>
-                    </form>
+                    <p>Please wait while we redirect you to PayPal's secure payment page.</p>
+                    <p class="text-muted small">If you are not redirected automatically, 
+                        <a href="{% url 'payments:initiate_payment' booking.id %}" class="alert-link">click here</a>.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    var stripe = Stripe('{{ stripe_public_key }}');
-    var elements = stripe.elements();
-    
-    var style = {
-        base: {
-            color: "#32325d",
-            fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-            fontSmoothing: "antialiased",
-            fontSize: "16px",
-            "::placeholder": {
-                color: "#aab7c4"
-            }
-        },
-        invalid: {
-            color: "#fa755a",
-            iconColor: "#fa755a"
-        }
-    };
-    
-    var card = elements.create("card", { style: style });
-    card.mount("#card-element");
-    
-    card.addEventListener('change', function(event) {
-        var displayError = document.getElementById('card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
-    });
-    
-    var form = document.getElementById('payment-form');
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        
-        var submitButton = document.getElementById('submit-button');
-        submitButton.disabled = true;
-        submitButton.textContent = 'Processing...';
-        
-        stripe.confirmCardPayment('{{ client_secret }}', {
-            payment_method: {
-                card: card,
-                billing_details: {
-                    name: '{{ booking.customer_name }}'
-                }
-            }
-        }).then(function(result) {
-            if (result.error) {
-                var errorElement = document.getElementById('card-errors');
-                errorElement.textContent = result.error.message;
-                submitButton.disabled = false;
-                submitButton.textContent = 'Pay Deposit ${{ booking.deposit_amount|floatformat:2 }}';
-            } else {
-                if (result.paymentIntent.status === 'succeeded') {
-                    // Redirect to success page
-                    window.location.href = "{% url 'bookings:booking_success' booking.booking_number %}";
-                }
-            }
-        });
-    });
+    // Auto-redirect to PayPal
+    window.location.href = "{% url 'payments:initiate_payment' booking.id %}";
 </script>
 {% endblock %}

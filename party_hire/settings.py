@@ -26,6 +26,7 @@ INSTALLED_APPS = [
         'apps.items',
         'apps.bookings',
         'apps.contact',
+        'apps.payments',
 
 ]
 
@@ -118,6 +119,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Stripe (for deposits)
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
+
+# PAYPAL
+PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID')
+PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET')
+PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')  # 'sandbox' or 'live'
+PAYPAL_RETURN_URL = config('PAYPAL_RETURN_URL', default='http://localhost:8002/payment/success/')
+PAYPAL_CANCEL_URL = config('PAYPAL_CANCEL_URL', default='http://localhost:8002/payment/cancel/')
 
 # Theme settings (add to your existing settings)
 AVAILABLE_THEMES = {
