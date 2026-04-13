@@ -22,3 +22,115 @@
         </div>
     </div>
 </div>
+
+<script>
+
+function openDateModal() {
+    const modal = document.getElementById('dateModal');
+    modal.classList.add('active');
+    
+    // Initialize pickers if they don't exist
+    if (!modalStartPicker) {
+        modalStartPicker = flatpickr("#modal_start_date", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            onChange: function(selectedDates, dateStr) {
+                if (selectedDates.length > 0 && modalEndPicker) {
+                    modalEndPicker.set('minDate', dateStr);
+                }
+            }
+        });
+    }
+    
+    if (!modalEndPicker) {
+        modalEndPicker = flatpickr("#modal_end_date", {
+            dateFormat: "Y-m-d",
+            minDate: "today"
+        });
+    }
+    
+    // Set dates after a short delay to ensure pickers are ready
+    setTimeout(function() {
+        if (currentStartDate && modalStartPicker) {
+            modalStartPicker.setDate(currentStartDate, false);
+        }
+        if (currentEndDate && modalEndPicker) {
+            modalEndPicker.setDate(currentEndDate, false);
+        }
+    }, 100);
+}
+
+function closeDateModal() {
+    const modal = document.getElementById('dateModal');
+    modal.classList.remove('active');
+}
+
+function confirmDates() {
+    if (!modalStartPicker || !modalEndPicker) {
+        alert('Date pickers not initialized');
+        return;
+    }
+    
+    const startDate = modalStartPicker.input.value;
+    const endDate = modalEndPicker.input.value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    closeDateModal();
+    showLoading();
+    
+    fetch('/bookings/set-date-range/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ start_date: startDate, end_date: endDate })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            if (data.unavailable_items && data.unavailable_items.length > 0) {
+                alert(`Warning: ${data.unavailable_items.length} item(s) were removed because they are not available on these dates.`);
+            }
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('Error setting dates');
+    });
+}
+
+function getCookie(name) {
+    let value = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                value = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return value;
+}
+
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+</script>
