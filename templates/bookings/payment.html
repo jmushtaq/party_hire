@@ -17,7 +17,7 @@
                     </div>
                     <p>Please wait while we redirect you to PayPal's secure payment page.</p>
                     <p class="text-muted small">If you are not redirected automatically, 
-                        <a href="{% url 'payments:initiate_payment' booking.id %}" class="alert-link">click here</a>.
+                        <a href="{% url 'payments_gateway:initiate_payment' booking.id %}" class="alert-link">click here</a>.
                     </p>
                 </div>
             </div>
@@ -27,6 +27,6 @@
 
 <script>
     // Auto-redirect to PayPal
-    window.location.href = "{% url 'payments:initiate_payment' booking.id %}";
+    window.location.href = "{% url 'payments_gateway:initiate_payment' booking.id %}";
 </script>
 {% endblock %}

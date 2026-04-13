@@ -13,5 +13,6 @@ django-extensions==4.1
 ipython==9.12.0
 stripe==15.0.1
 paypalrestsdk==1.13.3
-
+django-payments==3.1.0
+django-invoicing==12.0.2
 

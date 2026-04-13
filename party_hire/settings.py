@@ -26,7 +26,7 @@ INSTALLED_APPS = [
         'apps.items',
         'apps.bookings',
         'apps.contact',
-        'apps.payments',
+        'apps.payments_gateway',
 
 ]
 
