@@ -61,9 +61,9 @@ def booking_cart(request):
             print(f"Error processing cart item {item_id}: {e}")
             continue
 
-    delivery_cost = Decimal('50') if total > 0 else Decimal('0')
+    delivery_cost = Decimal(settings.DELIVERY_COST) if total > 0 else Decimal('0')
     grand_total = total + delivery_cost
-    deposit = grand_total * Decimal('0.3')
+    deposit = grand_total * Decimal(settings.DEPOSIT)
 
     return render(request, 'bookings/cart.html', {
         'items': items,

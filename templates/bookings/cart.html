@@ -94,7 +94,7 @@
                         <strong id="grand-total" class="text-primary">${{ total|floatformat:2 }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
-                        <span>Deposit Required (30%):</span>
+						<span>Deposit Required ({{DEPOSIT}}%):</span>
                         <span class="text-success" id="deposit">${{ deposit|floatformat:2 }}</span>
                     </div>
                     <a href="{% url 'bookings:checkout' %}" class="btn btn-success btn-lg w-100 mb-2">

@@ -44,7 +44,7 @@ class Booking(models.Model):
     def calculate_total(self):
         total = self.subtotal + self.delivery_cost
         self.total_amount = total
-        self.deposit_amount = total * Decimal('0.3')  # 30% deposit
+        self.deposit_amount = total * Decimal(settings.DEPOSIT)
         return total
 
     def __str__(self):

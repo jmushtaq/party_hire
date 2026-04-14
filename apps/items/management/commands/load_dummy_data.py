@@ -99,7 +99,7 @@ for name, slug, cat_slug, desc, price, featured, qty in items_data:
                 'category': category,
                 'description': desc,
                 'price_per_day': price,
-                'deposit_percentage': 30,
+                'deposit_percentage': 10,
                 'quantity_available': qty,
                 'is_available': True,
                 'featured': featured

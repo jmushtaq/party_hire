@@ -37,3 +37,15 @@ def date_range_context(request):
         'booking_start_date': start_date,
         'booking_end_date': end_date,
     }
+
+def party_hire_url(request):
+    return {
+        'DJANGO_SETTINGS': settings,
+        'DEBUG': settings.DEBUG,
+        'SYSTEM_NAME_SHORT': settings.SYSTEM_NAME_SHORT,
+        'SYSTEM_NAME': settings.SYSTEM_NAME,
+        'PUBLIC_URL': settings.PUBLIC_URL,
+        'SUPPORT_EMAIL': settings.SUPPORT_EMAIL,
+        'DEPOSIT': int(settings.DEPOSIT * 100),
+        #'build_tag': settings.BUILD_TAG,
+    }

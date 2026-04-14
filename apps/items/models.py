@@ -31,7 +31,7 @@ class HireItem(models.Model):
     pricing_type = models.CharField(max_length=10, choices=PRICING_CHOICES, default='period',
                                     help_text="How this item is priced")
 
-    deposit_percentage = models.IntegerField(default=30, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    deposit_percentage = models.IntegerField(default=10, validators=[MinValueValidator(0), MaxValueValidator(100)])
     image = models.ImageField(upload_to='items/')
     gallery_images = models.JSONField(default=list, blank=True)
     quantity_available = models.IntegerField(default=1)

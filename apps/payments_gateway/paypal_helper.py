@@ -12,11 +12,10 @@ paypalrestsdk.configure({
 def create_payment(booking, request):
     """Create a PayPal payment for a booking deposit"""
 
-    # Calculate amounts
+    # Calculate deposit amount
     deposit_amount = booking.deposit_amount
-    total_amount = booking.total_amount
 
-    # Build payment data
+    # Build payment data - simplified version without item breakdown
     payment_data = {
         "intent": "sale",
         "payer": {
@@ -27,29 +26,27 @@ def create_payment(booking, request):
             "cancel_url": f"{settings.PAYPAL_CANCEL_URL}?booking_id={booking.id}"
         },
         "transactions": [{
-            "item_list": {
-                "items": []
-            },
             "amount": {
                 "total": f"{deposit_amount:.2f}",
-                "currency": "AUD"
+                "currency": "AUD",
+                "details": {
+                    "subtotal": f"{deposit_amount:.2f}",
+                }
             },
             "description": f"Deposit payment for booking {booking.booking_number}",
             "invoice_number": booking.booking_number,
-            "custom": str(booking.id)
+            "custom": str(booking.id),
+            "item_list": {
+                "items": [{
+                    "name": f"Deposit for Booking {booking.booking_number}",
+                    "sku": booking.booking_number,
+                    "price": f"{deposit_amount:.2f}",
+                    "currency": "AUD",
+                    "quantity": 1
+                }]
+            }
         }]
     }
-
-    # Add items to the transaction
-    for booking_item in booking.items.all():
-        item = {
-            "name": booking_item.item.name[:127],  # PayPal max length
-            "sku": str(booking_item.item.id),
-            "price": f"{booking_item.price_per_day:.2f}",
-            "currency": "AUD",
-            "quantity": booking_item.quantity
-        }
-        payment_data["transactions"][0]["item_list"]["items"].append(item)
 
     # Create payment
     payment = paypalrestsdk.Payment(payment_data)

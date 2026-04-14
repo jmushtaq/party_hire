@@ -18,17 +18,23 @@ INSTALLED_APPS = [
         'django.contrib.sessions',
         'django.contrib.messages',
         'django.contrib.staticfiles',
+        'django.contrib.sites',
         'crispy_forms',
         'crispy_bootstrap4',
         'django_extensions',
+        'payments',
+        #'invoicing',
 
         'apps.core',
         'apps.items',
         'apps.bookings',
         'apps.contact',
         'apps.payments_gateway',
+        'apps.checkout',
 
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -58,6 +64,7 @@ TEMPLATES = [
                 'apps.core.context_processors.theme_context',
                 'apps.core.context_processors.cart_count_context',
                 'apps.core.context_processors.date_range_context',
+                'apps.core.context_processors.party_hire_url',
                 'apps.core.breadcrumbs.breadcrumbs_context',
             ],
         },
@@ -102,23 +109,33 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
 # Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST')
-EMAIL_PORT = config('EMAIL_PORT', cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST')
+    EMAIL_PORT = config('EMAIL_PORT', cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='info@simplyevents.com.au')
+
+DELIVERY_COST=config('DELIVERY_COST', default=1.50)
+DEPOSIT=config('DEPOSIT', default=0.1)
+SYSTEM_NAME_SHORT = config('SYSTEM_NAME_SHORT', default='Simply Events')
+SYSTEM_NAME = config('SYSTEM_NAME', default='Simply Events')
+PUBLIC_URL = config('PUBLIC_URL', default='https://simplyevents.com.au')
 
 # Theme settings
-AVAILABLE_THEMES = ['default', 'elegant', 'modern']
-ACTIVE_THEME = 'default'
+#AVAILABLE_THEMES = ['default', 'elegant', 'modern']
+#ACTIVE_THEME = 'default'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Stripe (for deposits)
-STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
-STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
+#STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
+#STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
 
 # PAYPAL
 PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID')
@@ -149,4 +166,22 @@ AVAILABLE_THEMES = {
     }
 }
 ACTIVE_THEME = 'default'  # Can be changed via session or user preference
+
+# Payment configuration
+PAYMENT_HOST = 'localhost:8002'
+PAYMENT_USES_SSL = False
+PAYMENT_PROTOCOL = 'http'
+PAYMENT_MODEL = 'payments_gateway.Payment'
+
+PAYMENT_VARIANTS = {
+    'paypal': ('payments.django_payments_paypal.PaypalProvider', {
+        'client_id': config('PAYPAL_CLIENT_ID'),
+        'secret': config('PAYPAL_CLIENT_SECRET'),
+        'endpoint': 'https://api-m.sandbox.paypal.com' if config('PAYPAL_MODE') == 'sandbox' else 'https://api-m.paypal.com',
+    }),
+}
+
+# Invoice settings
+INVOICE_FROM_EMAIL = config('INVOICE_FROM_EMAIL', default=DEFAULT_FROM_EMAIL)
+INVOICE_PREFIX = config('INVOICE_PREFIX', default='INV')
 

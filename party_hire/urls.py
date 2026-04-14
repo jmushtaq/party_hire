@@ -11,4 +11,5 @@ urlpatterns = [
     path('bookings/', include('apps.bookings.urls')),
     path('contact/', include('apps.contact.urls')),
     path('payments_gateway/', include('apps.payments_gateway.urls')),
+    path('checkout/', include('apps.checkout.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
