@@ -77,7 +77,6 @@ WSGI_APPLICATION = 'party_hire.wsgi.application'
 # Database
 DATABASES = {
         'default': dj_database_url.config(default=config('DATABASE_URL'))
-
 }
 
 # Password validation
@@ -99,6 +98,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
+
 
 # Media files
 MEDIA_URL = '/media/'
